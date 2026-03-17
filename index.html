@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tap Cricket V12</title>
+<title>Tap Cricket V13</title>
 
 <style>
 body {
@@ -36,7 +36,7 @@ button {
 <body>
 
 <div id="ui">
-  🏏 Tap Cricket V12 | Score: <span id="score">0</span>
+  🏏 Tap Cricket V13 | Score: <span id="score">0</span>
   | Result: <span id="result">-</span>
 </div>
 
@@ -49,11 +49,19 @@ button {
 let canvas = document.getElementById("game");
 let ctx = canvas.getContext("2d");
 
-let ball = { x: 180, y: 60, vx: 0, vy: 4, hit: false };
 let score = 0;
 
+let ball = { x: 180, y: 60, vx: 0, vy: 4, hit: false };
+
+// LOAD IMAGES
+let batsman = new Image();
+batsman.src = "https://i.imgur.com/3WbQZ6k.png";
+
+let bowler = new Image();
+bowler.src = "https://i.imgur.com/7yUVEWv.png";
+
 function drawField() {
-  // striped grass
+  // grass stripes
   for (let i = 0; i < 6; i++) {
     ctx.fillStyle = i % 2 ? "#2e7d32" : "#388e3c";
     ctx.fillRect(0, i * 100, 360, 100);
@@ -79,17 +87,8 @@ function drawField() {
 }
 
 function drawPlayers() {
-  // batsman (better shape)
-  ctx.fillStyle = "#0d47a1";
-  ctx.fillRect(165, 360, 30, 60);
-
-  // bat
-  ctx.fillStyle = "#d7a86e";
-  ctx.fillRect(150, 380, 70, 6);
-
-  // bowler
-  ctx.fillStyle = "#f9a825";
-  ctx.fillRect(165, 40, 30, 60);
+  ctx.drawImage(bowler, 140, 20, 80, 80);
+  ctx.drawImage(batsman, 140, 350, 80, 100);
 }
 
 function drawBall() {
