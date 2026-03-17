@@ -1,3 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perfect Hit</title>
+
+<style>
+body {
+  margin:0;
+  font-family:Arial;
+  text-align:center;
+  background:#0f172a;
+  color:white;
+}
+
+h1 { margin-top:20px; }
+
+#score { font-size:20px; margin:10px; }
+
+#timer { font-size:18px; margin:10px; }
+
+#gameBox {
+  width:300px;
+  height:40px;
+  background:#1e293b;
+  margin:40px auto;
+  position:relative;
+  border-radius:10px;
+}
+
+.zone {
+  position:absolute;
+  height:100%;
+}
+
+#perfect {
+  background:#22c55e;
+  left:120px;
+  width:60px;
+}
+
+#good {
+  background:#eab308;
+  left:90px;
+  width:120px;
+  opacity:0.6;
+}
+
+#marker {
+  width:10px;
+  height:100%;
+  background:#ef4444;
+  position:absolute;
+  left:0;
+}
+
+button {
+  padding:12px 25px;
+  font-size:18px;
+  background:#ef4444;
+  border:none;
+  border-radius:8px;
+  color:white;
+}
+
+#result {
+  margin-top:20px;
+  font-size:20px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎯 Perfect Hit</h1>
+
+<div id="score">Score: 0</div>
+<div id="timer">Time: 10s</div>
+
+<div id="gameBox">
+  <div id="good" class="zone"></div>
+  <div id="perfect" class="zone"></div>
+  <div id="marker"></div>
+</div>
+
+<button onclick="hit()">HIT</button>
+
+<div id="result">Tap at the right time!</div>
+
 <script>
 let marker = document.getElementById("marker");
 
@@ -11,13 +100,7 @@ let direction = 1;
 
 let gameActive = true;
 
-// Timer display
-let timerText = document.createElement("div");
-timerText.style.fontSize = "18px";
-timerText.innerText = "Time: 10s";
-document.body.insertBefore(timerText, document.getElementById("gameBox"));
-
-// Animate marker
+// Animate
 function animate(){
   if(!gameActive) return;
 
@@ -56,16 +139,17 @@ function hit(){
   document.getElementById("result").innerText = resultText;
 }
 
-// Timer countdown
+// Timer
 function startTimer(){
   let timer = setInterval(() => {
+
     if(!gameActive){
       clearInterval(timer);
       return;
     }
 
     timeLeft--;
-    timerText.innerText = "Time: " + timeLeft + "s";
+    document.getElementById("timer").innerText = "Time: " + timeLeft + "s";
 
     if(timeLeft <= 0){
       gameActive = false;
@@ -74,9 +158,13 @@ function startTimer(){
       document.getElementById("result").innerText = "🏁 GAME OVER!";
       alert("Final Score: " + score);
     }
+
   }, 1000);
 }
 
 animate();
 startTimer();
 </script>
+
+</body>
+</html>
