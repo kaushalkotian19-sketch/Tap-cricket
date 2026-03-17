@@ -1,3 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tap Cricket Pro</title>
+</head>
+
+<body style="background:#0b1a2f; color:white; text-align:center;">
+
+<h1>🏏 Tap Cricket Pro</h1>
+
+<h2 id="score">Score: 0</h2>
+<h3 id="balls">Balls left: 6</h3>
+<h3 id="result"></h3>
+
+<button onclick="hit()" style="padding:20px; font-size:20px;">HIT</button>
+
+<script>
+let score = 0;
+let balls = 6;
+let pos = 150; // example
+
 function hit() {
   if (balls <= 0) return;
 
@@ -32,3 +53,7 @@ function hit() {
     }, 200);
   }
 }
+</script>
+
+</body>
+</html>
