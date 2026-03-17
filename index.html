@@ -36,15 +36,13 @@ h1 { margin-top:20px; }
 
 #perfect {
   background:#22c55e;
-  left:120px;
   width:60px;
 }
 
 #good {
   background:#eab308;
-  left:90px;
   width:120px;
-  opacity:0.6;
+  opacity:0.5;
 }
 
 #marker {
@@ -69,6 +67,10 @@ button {
   margin-top:15px;
   font-size:18px;
 }
+
+#leaderboard {
+  margin-top:20px;
+}
 </style>
 </head>
 
@@ -77,7 +79,6 @@ button {
 <h1>🎯 Perfect Hit</h1>
 
 <div id="score">Score: 0</div>
-<div id="highscore">High Score: 0</div>
 <div id="timer">Time: 10s</div>
 
 <div id="gameBox">
@@ -91,22 +92,41 @@ button {
 
 <div id="result">Tap at the right time!</div>
 
+<div id="leaderboard">
+<h3>🏆 Top Scores</h3>
+<div id="scores"></div>
+</div>
+
 <script>
 let marker = document.getElementById("marker");
+let perfect = document.getElementById("perfect");
+let good = document.getElementById("good");
 
 let score = 0;
 let combo = 0;
 let timeLeft = 10;
-let highScore = localStorage.getItem("highScore") || 0;
-
-document.getElementById("highscore").innerText = "High Score: " + highScore;
 
 let speed = 4;
 let pos = 0;
 let direction = 1;
 let gameActive = true;
 
-// simple sound
+let zonePos = 120;
+
+// leaderboard
+let scores = JSON.parse(localStorage.getItem("scores")) || [];
+
+function updateLeaderboard(){
+  let html = "";
+  scores.sort((a,b)=>b-a).slice(0,5).forEach(s=>{
+    html += "<div>" + s + "</div>";
+  });
+  document.getElementById("scores").innerHTML = html;
+}
+
+updateLeaderboard();
+
+// sound
 function playSound(freq){
   let ctx = new (window.AudioContext || window.webkitAudioContext)();
   let osc = ctx.createOscillator();
@@ -116,7 +136,7 @@ function playSound(freq){
   setTimeout(()=>osc.stop(),100);
 }
 
-// Animate
+// animate marker + difficulty
 function animate(){
   if(!gameActive) return;
 
@@ -127,22 +147,31 @@ function animate(){
   }
 
   marker.style.left = pos + "px";
+
+  // move zones slowly
+  zonePos += 1;
+  if(zonePos > 200) zonePos = 80;
+
+  perfect.style.left = zonePos + "px";
+  good.style.left = (zonePos - 30) + "px";
+
   requestAnimationFrame(animate);
 }
 
-// Hit logic
+// hit logic
 function hit(){
   if(!gameActive) return;
 
   let resultText = "";
 
-  if(pos >= 120 && pos <= 180){
+  if(pos >= zonePos && pos <= zonePos+60){
     combo++;
-    score += 10 + (combo * 2);
+    score += 10 + combo;
     resultText = "🔥 PERFECT x" + combo;
     playSound(600);
+    speed += 0.2;
   }
-  else if(pos >= 90 && pos <= 210){
+  else if(pos >= zonePos-30 && pos <= zonePos+90){
     combo = 0;
     score += 5;
     resultText = "👍 GOOD!";
@@ -158,7 +187,7 @@ function hit(){
   document.getElementById("result").innerText = resultText;
 }
 
-// Timer
+// timer
 function startTimer(){
   let timer = setInterval(() => {
 
@@ -174,10 +203,9 @@ function startTimer(){
       gameActive = false;
       clearInterval(timer);
 
-      if(score > highScore){
-        localStorage.setItem("highScore", score);
-        document.getElementById("highscore").innerText = "High Score: " + score;
-      }
+      scores.push(score);
+      localStorage.setItem("scores", JSON.stringify(scores));
+      updateLeaderboard();
 
       document.getElementById("result").innerText = "🏁 GAME OVER!";
       alert("Final Score: " + score);
@@ -186,11 +214,12 @@ function startTimer(){
   }, 1000);
 }
 
-// Restart
+// restart
 function restartGame(){
   score = 0;
   combo = 0;
   timeLeft = 10;
+  speed = 4;
   gameActive = true;
 
   document.getElementById("score").innerText = "Score: 0";
