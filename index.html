@@ -15,15 +15,16 @@ body {
 
 h1 { margin-top:20px; }
 
-#score { font-size:20px; margin:10px; }
-
-#timer { font-size:18px; margin:10px; }
+#score, #timer, #highscore {
+  font-size:18px;
+  margin:5px;
+}
 
 #gameBox {
   width:300px;
   height:40px;
   background:#1e293b;
-  margin:40px auto;
+  margin:30px auto;
   position:relative;
   border-radius:10px;
 }
@@ -55,17 +56,18 @@ h1 { margin-top:20px; }
 }
 
 button {
-  padding:12px 25px;
-  font-size:18px;
+  padding:10px 20px;
+  font-size:16px;
   background:#ef4444;
   border:none;
   border-radius:8px;
   color:white;
+  margin:5px;
 }
 
 #result {
-  margin-top:20px;
-  font-size:20px;
+  margin-top:15px;
+  font-size:18px;
 }
 </style>
 </head>
@@ -75,6 +77,7 @@ button {
 <h1>🎯 Perfect Hit</h1>
 
 <div id="score">Score: 0</div>
+<div id="highscore">High Score: 0</div>
 <div id="timer">Time: 10s</div>
 
 <div id="gameBox">
@@ -84,6 +87,7 @@ button {
 </div>
 
 <button onclick="hit()">HIT</button>
+<button onclick="restartGame()">Restart</button>
 
 <div id="result">Tap at the right time!</div>
 
@@ -93,12 +97,24 @@ let marker = document.getElementById("marker");
 let score = 0;
 let combo = 0;
 let timeLeft = 10;
+let highScore = localStorage.getItem("highScore") || 0;
+
+document.getElementById("highscore").innerText = "High Score: " + highScore;
 
 let speed = 4;
 let pos = 0;
 let direction = 1;
-
 let gameActive = true;
+
+// simple sound
+function playSound(freq){
+  let ctx = new (window.AudioContext || window.webkitAudioContext)();
+  let osc = ctx.createOscillator();
+  osc.frequency.value = freq;
+  osc.connect(ctx.destination);
+  osc.start();
+  setTimeout(()=>osc.stop(),100);
+}
 
 // Animate
 function animate(){
@@ -123,16 +139,19 @@ function hit(){
   if(pos >= 120 && pos <= 180){
     combo++;
     score += 10 + (combo * 2);
-    resultText = "🔥 PERFECT! Combo x" + combo;
+    resultText = "🔥 PERFECT x" + combo;
+    playSound(600);
   }
   else if(pos >= 90 && pos <= 210){
     combo = 0;
     score += 5;
     resultText = "👍 GOOD!";
+    playSound(400);
   }
   else{
     combo = 0;
     resultText = "❌ MISS!";
+    playSound(200);
   }
 
   document.getElementById("score").innerText = "Score: " + score;
@@ -155,11 +174,31 @@ function startTimer(){
       gameActive = false;
       clearInterval(timer);
 
+      if(score > highScore){
+        localStorage.setItem("highScore", score);
+        document.getElementById("highscore").innerText = "High Score: " + score;
+      }
+
       document.getElementById("result").innerText = "🏁 GAME OVER!";
       alert("Final Score: " + score);
     }
 
   }, 1000);
+}
+
+// Restart
+function restartGame(){
+  score = 0;
+  combo = 0;
+  timeLeft = 10;
+  gameActive = true;
+
+  document.getElementById("score").innerText = "Score: 0";
+  document.getElementById("timer").innerText = "Time: 10s";
+  document.getElementById("result").innerText = "Tap at the right time!";
+
+  animate();
+  startTimer();
 }
 
 animate();
