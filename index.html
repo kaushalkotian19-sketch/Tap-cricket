@@ -2,164 +2,180 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tap Cricket V13</title>
-
+<title>Tap Cricket V14</title>
 <style>
 body {
-  margin: 0;
-  background: #0b3d2e;
-  font-family: Arial;
-  color: white;
-  text-align: center;
+  margin:0;
+  text-align:center;
+  background:#0a7d00;
+  color:white;
+  font-family:Arial;
 }
-
-#ui {
-  background: #111;
-  padding: 10px;
-  font-size: 14px;
-}
-
-canvas {
-  display: block;
-  margin: auto;
-  background: #2e7d32;
-}
-
+canvas { background:#2e7d32; }
 button {
-  margin: 10px;
-  padding: 12px 25px;
-  font-size: 16px;
+  margin:5px;
+  padding:10px 20px;
 }
 </style>
 </head>
 
 <body>
 
-<div id="ui">
-  🏏 Tap Cricket V13 | Score: <span id="score">0</span>
-  | Result: <span id="result">-</span>
-</div>
+<h3>🏏 Tap Cricket V14</h3>
+<div id="score">Score: 0</div>
+<div id="over">Over: 0.0</div>
+<div id="wickets">Wickets: 0</div>
+<div id="result"></div>
 
-<canvas id="game" width="360" height="520"></canvas>
+<canvas id="game" width="350" height="500"></canvas><br>
 
-<button onclick="hit(-1)">⬅ Shot</button>
-<button onclick="hit(1)">Shot ➡</button>
+<button onclick="hit(-1)">⬅ Leg Side</button>
+<button onclick="hit(1)">Off Side ➡</button>
 
 <script>
 let canvas = document.getElementById("game");
 let ctx = canvas.getContext("2d");
 
 let score = 0;
+let balls = 0;
+let wickets = 0;
+let totalBalls = 6;
 
-let ball = { x: 180, y: 60, vx: 0, vy: 4, hit: false };
+let ball = {x:175,y:50,vx:0,vy:4,hit:false};
+let bowlingType = "fast";
 
-// LOAD IMAGES
-let batsman = new Image();
-batsman.src = "https://i.imgur.com/3WbQZ6k.png";
+function newBall() {
+  ball = {x:175,y:50,vx:0,vy:4,hit:false};
 
-let bowler = new Image();
-bowler.src = "https://i.imgur.com/7yUVEWv.png";
+  // AI chooses bowling type
+  bowlingType = Math.random() > 0.5 ? "fast" : "spin";
 
-function drawField() {
-  // grass stripes
-  for (let i = 0; i < 6; i++) {
-    ctx.fillStyle = i % 2 ? "#2e7d32" : "#388e3c";
-    ctx.fillRect(0, i * 100, 360, 100);
+  if(bowlingType==="spin"){
+    ball.vx = (Math.random()-0.5)*2;
+  } else {
+    ball.vx = 0;
   }
-
-  // pitch
-  ctx.fillStyle = "#c2a679";
-  ctx.fillRect(130, 0, 100, 520);
-
-  // crease
-  ctx.strokeStyle = "white";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(120, 420);
-  ctx.lineTo(240, 420);
-  ctx.stroke();
-
-  // stumps
-  ctx.fillStyle = "white";
-  ctx.fillRect(170, 390, 5, 30);
-  ctx.fillRect(180, 390, 5, 30);
-  ctx.fillRect(190, 390, 5, 30);
 }
 
-function drawPlayers() {
-  ctx.drawImage(bowler, 140, 20, 80, 80);
-  ctx.drawImage(batsman, 140, 350, 80, 100);
+function drawField(){
+  ctx.fillStyle="#c2a679";
+  ctx.fillRect(130,0,90,500);
+
+  ctx.fillStyle="white";
+  ctx.fillRect(170,420,5,30);
+  ctx.fillRect(180,420,5,30);
+  ctx.fillRect(190,420,5,30);
 }
 
-function drawBall() {
-  // shadow
-  ctx.beginPath();
-  ctx.arc(ball.x, 440, 8, 0, Math.PI * 2);
-  ctx.fillStyle = "rgba(0,0,0,0.2)";
-  ctx.fill();
+function drawPlayers(){
+  // bowler
+  ctx.fillStyle="orange";
+  ctx.fillRect(160,20,30,50);
 
-  // ball
+  // batsman
+  ctx.fillStyle="blue";
+  ctx.fillRect(160,380,30,50);
+
+  // bat
+  ctx.fillStyle="yellow";
+  ctx.fillRect(140,420,70,5);
+}
+
+function drawBall(){
   ctx.beginPath();
-  ctx.arc(ball.x, ball.y, 6, 0, Math.PI * 2);
-  ctx.fillStyle = "red";
+  ctx.arc(ball.x,ball.y,6,0,Math.PI*2);
+  ctx.fillStyle="red";
   ctx.fill();
 }
 
-function updateBall() {
+function updateBall(){
   ball.y += ball.vy;
   ball.x += ball.vx;
 
-  if (ball.y > 420 && !ball.hit) {
+  if(ball.y > 430 && !ball.hit){
+    balls++;
     setResult("Miss!");
-    resetBall();
+    checkEnd();
+    newBall();
   }
 
-  if (ball.hit) {
+  if(ball.hit){
     ball.vy -= 0.3;
   }
 
-  if (ball.y < 0) resetBall();
+  if(ball.y < 0){
+    newBall();
+  }
 }
 
-function hit(dir) {
+function hit(dir){
   let timing = Math.abs(ball.y - 420);
 
-  if (timing < 25) {
-    ball.hit = true;
-    ball.vx = dir * (3 + Math.random() * 2);
-    ball.vy = -7;
+  let run = 0;
 
-    let run = timing < 10 ? 6 : 4;
-    score += run;
-
-    setResult(run === 6 ? "🔥 SIX!" : "💥 FOUR!");
-  } else {
-    setResult("❌ Miss!");
+  if(timing < 10){
+    run = 6;
+    setResult("🔥 SIX!");
+  }
+  else if(timing < 25){
+    run = 4;
+    setResult("💥 FOUR!");
+  }
+  else if(timing < 50){
+    run = 1;
+    setResult("Single");
+  }
+  else{
+    if(Math.random()<0.5){
+      wickets++;
+      setResult("❌ OUT!");
+    } else {
+      setResult("Dot ball");
+    }
   }
 
-  document.getElementById("score").innerText = score;
+  score += run;
+  balls++;
+
+  ball.hit = true;
+  ball.vx = dir * (2 + Math.random()*2);
+  ball.vy = -6;
+
+  updateUI();
+  checkEnd();
 }
 
-function setResult(text) {
-  document.getElementById("result").innerText = text;
+function updateUI(){
+  document.getElementById("score").innerText="Score: "+score;
+  document.getElementById("over").innerText="Over: "+Math.floor(balls/6)+"."+(balls%6);
+  document.getElementById("wickets").innerText="Wickets: "+wickets;
 }
 
-function resetBall() {
-  ball = { x: 180, y: 60, vx: 0, vy: 4, hit: false };
+function setResult(text){
+  document.getElementById("result").innerText = text + " ("+bowlingType+")";
 }
 
-function gameLoop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+function checkEnd(){
+  if(balls>=totalBalls || wickets>=3){
+    setTimeout(()=>{
+      alert("Game Over\nScore: "+score);
+    },200);
+  }
+}
+
+function loop(){
+  ctx.clearRect(0,0,350,500);
 
   drawField();
   drawPlayers();
   drawBall();
   updateBall();
 
-  requestAnimationFrame(gameLoop);
+  requestAnimationFrame(loop);
 }
 
-gameLoop();
+newBall();
+loop();
 </script>
 
 </body>
