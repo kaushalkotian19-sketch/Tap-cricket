@@ -10,38 +10,51 @@ body {
   text-align: center;
 }
 
+/* TOP BAR */
 #topBar {
   display: flex;
   justify-content: space-between;
-  padding: 12px 15px;
+  padding: 12px;
   background: #0b1a2e;
+  position: relative;
+  z-index: 100;
 }
 
 #menuBtn { font-size: 24px; cursor: pointer; }
 
+/* BALANCE */
 #balance {
   background: #132b4a;
   padding: 6px 14px;
   border-radius: 20px;
 }
 
+/* OVERLAY (FIXED) */
 #overlay {
   position: fixed;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
   display: none;
+  z-index: 50; /* ABOVE GAME */
 }
 
+/* SIDE MENU */
 #sideMenu {
   position: fixed;
+  top: 0;
   left: -220px;
   width: 200px;
   height: 100%;
   background: #0f2238;
   padding: 20px;
   transition: 0.3s;
+  z-index: 100; /* ABOVE OVERLAY */
 }
 
+/* GAME */
 #gameBox {
   width: 300px;
   height: 40px;
@@ -67,6 +80,7 @@ body {
   left: 0;
 }
 
+/* BUTTON */
 button {
   padding: 12px;
   margin: 10px;
@@ -82,7 +96,8 @@ button {
   <button onclick="goPage('home')">Dashboard</button>
   <button onclick="goPage('game')">Play</button>
   <button onclick="goPage('profile')">Profile</button>
-</div><div id="content"></div><audio id="bgMusic" loop src="https://cdn.pixabay.com/audio/2022/03/15/audio_115b9bce08.mp3"></audio> <audio id="hitSound" src="https://cdn.pixabay.com/audio/2022/03/10/audio_c1e92f4a2f.mp3"></audio>
+</div><div id="content"></div><!-- AUDIO --><audio id="bgMusic" loop src="https://cdn.pixabay.com/audio/2022/03/15/audio_115b9bce08.mp3"></audio>
+<audio id="hitSound" src="https://cdn.pixabay.com/audio/2022/03/10/audio_c1e92f4a2f.mp3"></audio>
 
 <script>
 let state = {
@@ -95,13 +110,27 @@ let state = {
   turn: "P1",
   combo: 0,
   multiplier: 1,
-  titles: [],
-  pool: 0
+  pool: 0,
+  audioUnlocked: false
 };
 
+/* 🔊 AUDIO UNLOCK (CRITICAL FIX) */
+document.body.addEventListener("click", () => {
+  if (!state.audioUnlocked) {
+    let bg = document.getElementById("bgMusic");
+    bg.play().then(() => {
+      bg.pause();
+      bg.currentTime = 0;
+      state.audioUnlocked = true;
+    }).catch(()=>{});
+  }
+});
+
+/* MENU */
 function toggleMenu() {
   let menu = document.getElementById("sideMenu");
   let overlay = document.getElementById("overlay");
+
   if (menu.style.left === "0px") {
     menu.style.left = "-220px";
     overlay.style.display = "none";
@@ -111,16 +140,19 @@ function toggleMenu() {
   }
 }
 
+/* NAV */
 function goPage(p) {
   state.page = p;
   toggleMenu();
   render();
 }
 
+/* HOME */
 function homePage() {
   return `<h1>Perfect Hit Arena</h1>`;
 }
 
+/* GAME */
 function gamePage() {
   return `
     <h2>${state.turn === "P1" ? "Player 1" : "Player 2"}</h2>
@@ -137,6 +169,7 @@ function gamePage() {
   `;
 }
 
+/* MOVE */
 function moveBar() {
   if (state.page !== "game") return;
   let bar = document.getElementById("hitZone");
@@ -144,24 +177,31 @@ function moveBar() {
 
   state.pos += state.speed;
   if (state.pos > 290 || state.pos < 0) state.speed *= -1;
+
   bar.style.left = state.pos + "px";
 }
 setInterval(moveBar, 20);
 
+/* ENTER */
 function enterGame() {
   if (state.coins >= 100) {
     state.coins -= 100;
     state.pool += 200;
-    document.getElementById("bgMusic").play();
+
+    // 🔊 NOW WORKS
+    let bg = document.getElementById("bgMusic");
+    bg.play().catch(()=>{});
+
     updateBalance();
   }
 }
 
+/* HIT */
 function hit() {
   let perfectStart = 120;
   let perfectEnd = 180;
 
-  document.getElementById("hitSound").play();
+  document.getElementById("hitSound").play().catch(()=>{});
 
   let success = state.pos > perfectStart && state.pos < perfectEnd;
 
@@ -169,28 +209,17 @@ function hit() {
     state.combo++;
     state.multiplier = 1 + Math.floor(state.combo / 3);
 
-    let points = 10 * state.multiplier;
-
-    if (state.turn === "P1") state.scoreP1 += points;
-    else state.scoreP2 += points;
+    let pts = 10 * state.multiplier;
+    if (state.turn === "P1") state.scoreP1 += pts;
+    else state.scoreP2 += pts;
 
   } else {
     state.combo = 0;
     state.multiplier = 1;
   }
 
-  // TITLE SYSTEM
-  if (state.scoreP1 >= 50 || state.scoreP2 >= 50) {
-    if (!state.titles.includes("Sharpshooter")) state.titles.push("Sharpshooter");
-  }
-  if (state.scoreP1 >= 100 || state.scoreP2 >= 100) {
-    if (!state.titles.includes("Legend")) state.titles.push("Legend");
-  }
-
-  // SWITCH PLAYER
   state.turn = state.turn === "P1" ? "P2" : "P1";
 
-  // END GAME (5 turns each approx)
   if (state.scoreP1 >= 100 || state.scoreP2 >= 100) {
     let winner = state.scoreP1 > state.scoreP2 ? "Player 1" : "Player 2";
     alert(winner + " wins " + state.pool + " ION!");
@@ -205,22 +234,22 @@ function hit() {
   render();
 }
 
+/* PROFILE */
 function profilePage() {
-  return `
-    <h2>Profile</h2>
-    <p>Coins: ${state.coins}</p>
-    <p>Titles: ${state.titles.join(", ")}</p>
-  `;
+  return `<h2>Coins: ${state.coins}</h2>`;
 }
 
+/* RENDER */
 function render() {
   let html = "";
   if (state.page === "home") html = homePage();
   if (state.page === "game") html = gamePage();
   if (state.page === "profile") html = profilePage();
+
   document.getElementById("content").innerHTML = html;
 }
 
+/* BALANCE */
 function updateBalance() {
   document.getElementById("balance").innerText = "💰 " + state.coins + " ION";
 }
