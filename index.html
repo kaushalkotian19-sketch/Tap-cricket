@@ -26,8 +26,8 @@ h1 { margin-top:15px; }
 
 .zone { position:absolute; height:100%; }
 
-#perfect { background:#22c55e; width:60px; }
-#good { background:#eab308; width:120px; opacity:0.5; }
+#perfect { background:#22c55e; }
+#good { background:#eab308; opacity:0.5; }
 
 #marker {
   width:10px;
@@ -44,8 +44,6 @@ button {
   background:#ef4444;
   color:white;
 }
-
-#leaderboard { margin-top:20px; }
 </style>
 </head>
 
@@ -54,6 +52,8 @@ button {
 <h1>🎯 Perfect Hit Arena</h1>
 
 <div>💰 Balance: <span id="balance">500</span> ION</div>
+<div>🏟 Arena: <span id="arenaText">1</span></div>
+<div>👑 Title: <span id="titleText">Beginner</span></div>
 <div>👤 Turn: <span id="playerTurn">Player 1</span></div>
 <div>Score: <span id="score">0</span></div>
 <div>Time: <span id="timer">10</span>s</div>
@@ -66,16 +66,10 @@ button {
 
 <button onclick="startGame()">Enter (100 ION)</button>
 <button onclick="hit()">HIT</button>
-<button onclick="shareScore()">Share Score</button>
 
 <div id="result"></div>
 
-<div id="leaderboard">
-<h3>🏆 Global Leaderboard</h3>
-<div id="scores"></div>
-</div>
-
-<!-- 🔊 SOUND -->
+<!-- SOUND -->
 <audio id="bgm" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
 <audio id="hitSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
 <audio id="missSound" src="https://www.soundjay.com/button/beep-10.wav"></audio>
@@ -93,25 +87,23 @@ let direction = 1;
 let gameActive = false;
 
 let zonePos = 120;
-
 let balance = 500;
 
 let player = 1;
 let p1Score = 0;
 let p2Score = 0;
 
-// leaderboard
-let scores = JSON.parse(localStorage.getItem("globalScores")) || [];
+// ARENA SYSTEM
+let arena = parseInt(localStorage.getItem("arena") || 1);
+document.getElementById("arenaText").innerText = arena;
 
-function updateLeaderboard(){
-  scores.sort((a,b)=>b.score-a.score);
-  let html = "";
-  scores.slice(0,5).forEach(s=>{
-    html += "<div>👤 "+s.name+" - "+s.score+"</div>";
-  });
-  document.getElementById("scores").innerHTML = html;
+// TITLE SYSTEM
+function getTitle(score){
+  if(score >= 250) return "🏆 Legend";
+  if(score >= 150) return "🔥 Perfect King";
+  if(score >= 80) return "🎯 Sharpshooter";
+  return "Beginner";
 }
-updateLeaderboard();
 
 // START GAME
 function startGame(){
@@ -126,6 +118,22 @@ function startGame(){
   score = 0;
   timeLeft = 10;
   gameActive = true;
+
+  // difficulty
+  if(arena === 1){
+    speed = 4;
+    perfect.style.width = "60px";
+  }
+  if(arena === 2){
+    speed = 6;
+    perfect.style.width = "50px";
+  }
+  if(arena === 3){
+    speed = 8;
+    perfect.style.width = "40px";
+  }
+
+  good.style.width = "120px";
 
   document.getElementById("bgm").play();
 
@@ -158,7 +166,7 @@ function animate(){
 function hit(){
   if(!gameActive) return;
 
-  if(pos >= zonePos && pos <= zonePos+60){
+  if(pos >= zonePos && pos <= zonePos + parseInt(perfect.style.width)){
     score += 10;
     speed += 0.2;
     document.getElementById("hitSound").play();
@@ -208,8 +216,28 @@ function endTurn(){
   }
 }
 
-// WINNER
+// WINNER + UNLOCK
 function decideWinner(){
+  let winnerScore = Math.max(p1Score, p2Score);
+
+  let title = getTitle(winnerScore);
+  document.getElementById("titleText").innerText = title;
+
+  // unlock arenas
+  if(winnerScore >= 100 && arena < 2){
+    arena = 2;
+    localStorage.setItem("arena", 2);
+    alert("🔥 Arena 2 Unlocked!");
+  }
+
+  if(winnerScore >= 200 && arena < 3){
+    arena = 3;
+    localStorage.setItem("arena", 3);
+    alert("🔥 Arena 3 Unlocked!");
+  }
+
+  document.getElementById("arenaText").innerText = arena;
+
   let winner = "";
 
   if(p1Score > p2Score){
@@ -223,22 +251,10 @@ function decideWinner(){
     balance += 100;
   }
 
-  let name = prompt("Enter your name:");
-  scores.push({name:name, score:Math.max(p1Score,p2Score)});
-  localStorage.setItem("globalScores", JSON.stringify(scores));
-  updateLeaderboard();
-
   document.getElementById("balance").innerText = balance;
   document.getElementById("result").innerText = "🏆 Winner: " + winner;
 
   document.getElementById("bgm").pause();
-}
-
-// SHARE
-function shareScore(){
-  let text = "🎯 I scored " + score + " in Perfect Hit Arena! Try beat me 🔥";
-  let url = "https://t.me/share/url?text=" + encodeURIComponent(text);
-  window.open(url);
 }
 </script>
 
