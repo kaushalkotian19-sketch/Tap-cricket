@@ -4,7 +4,7 @@
   <title>Tap Cricket Pro</title>
 </head>
 
-<body style="background:#0b1a2f; color:white; text-align:center;">
+<body style="background:#0b1a2f; color:white; text-align:center; font-family:sans-serif;">
 
 <h1>🏏 Tap Cricket Pro</h1>
 
@@ -12,47 +12,125 @@
 <h3 id="balls">Balls left: 6</h3>
 <h3 id="result"></h3>
 
-<button onclick="hit()" style="padding:20px; font-size:20px;">HIT</button>
+<!-- Game Area -->
+<div style="position:relative; height:300px; margin-top:20px;">
+
+  <!-- Ball -->
+  <div id="ball" style="
+    position:absolute;
+    width:20px;
+    height:20px;
+    background:red;
+    border-radius:50%;
+    top:0px;
+    left:50%;
+  "></div>
+
+  <!-- Bat Zone -->
+  <div style="
+    position:absolute;
+    bottom:20px;
+    left:40%;
+    width:20%;
+    height:20px;
+    background:green;
+  "></div>
+
+</div>
+
+<button onclick="hit()" style="padding:15px; font-size:18px; margin-top:20px;">
+  HIT
+</button>
 
 <script>
 let score = 0;
 let balls = 6;
-let pos = 150; // example
+let ballY = 0;
+let speed = 3;
+let interval;
+
+// Start bowling
+function startBall() {
+  ballY = 0;
+  document.getElementById("ball").style.top = ballY + "px";
+
+  interval = setInterval(() => {
+    ballY += speed;
+    document.getElementById("ball").style.top = ballY + "px";
+
+    if (ballY > 260) {
+      clearInterval(interval);
+      out();
+    }
+  }, 20);
+}
 
 function hit() {
   if (balls <= 0) return;
 
-  let ballPos = pos;
-  let targetStart = 120;
-  let targetEnd = 180;
+  clearInterval(interval);
 
   let run = 0;
   let text = "";
 
-  if (ballPos >= targetStart && ballPos <= targetEnd) {
+  // Perfect timing
+  if (ballY > 220 && ballY < 260) {
     run = 6;
     text = "🔥 SIX!";
-  } else if (ballPos >= 90 && ballPos <= 210) {
-    run = 2;
-    text = "👍 Good Shot!";
-  } else {
-    run = 0;
-    text = "❌ Miss!";
+  }
+  // Good timing
+  else if (ballY > 180 && ballY <= 220) {
+    run = 4;
+    text = "👍 FOUR!";
+  }
+  // Late hit
+  else if (ballY > 140 && ballY <= 180) {
+    run = 1;
+    text = "🙂 Single";
+  }
+  else {
+    return out();
   }
 
   score += run;
   balls--;
 
+  update(text);
+
+  speed += 0.5; // increase difficulty
+
+  if (balls > 0) {
+    setTimeout(startBall, 500);
+  } else {
+    endGame();
+  }
+}
+
+function out() {
+  balls--;
+  update("❌ OUT!");
+
+  if (balls > 0) {
+    setTimeout(startBall, 500);
+  } else {
+    endGame();
+  }
+}
+
+function update(text) {
   document.getElementById("score").innerText = "Score: " + score;
   document.getElementById("balls").innerText = "Balls left: " + balls;
   document.getElementById("result").innerText = text;
-
-  if (balls === 0) {
-    setTimeout(() => {
-      alert("🏏 Game Over!\nScore: " + score);
-    }, 200);
-  }
 }
+
+function endGame() {
+  setTimeout(() => {
+    alert("🏏 Game Over!\nScore: " + score);
+  }, 200);
+}
+
+// Start first ball
+startBall();
 </script>
 
 </body>
