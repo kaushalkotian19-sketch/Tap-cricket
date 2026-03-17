@@ -2,180 +2,152 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tap Cricket V14</title>
+<title>Tap Cricket V15</title>
 <style>
 body {
   margin:0;
-  text-align:center;
-  background:#0a7d00;
-  color:white;
   font-family:Arial;
+  background:#0b2a4a;
+  color:white;
+  text-align:center;
 }
-canvas { background:#2e7d32; }
+
+#scoreboard {
+  padding:10px;
+  background:#102f5c;
+  font-size:18px;
+}
+
+canvas {
+  background:#3aa655;
+  display:block;
+  margin:auto;
+}
+
+.controls {
+  margin:10px;
+}
+
 button {
+  padding:12px 20px;
   margin:5px;
-  padding:10px 20px;
+  font-size:16px;
+  border:none;
+  border-radius:8px;
+  background:#ff3b3b;
+  color:white;
 }
 </style>
 </head>
 
 <body>
 
-<h3>🏏 Tap Cricket V14</h3>
-<div id="score">Score: 0</div>
-<div id="over">Over: 0.0</div>
-<div id="wickets">Wickets: 0</div>
-<div id="result"></div>
+<div id="scoreboard">
+🏏 Score: <span id="score">0</span> |
+Balls: <span id="balls">6</span> |
+Wickets: <span id="wickets">0</span>
+<br>
+<span id="result">Tap to play!</span>
+</div>
 
-<canvas id="game" width="350" height="500"></canvas><br>
+<canvas id="game" width="350" height="500"></canvas>
 
-<button onclick="hit(-1)">⬅ Leg Side</button>
-<button onclick="hit(1)">Off Side ➡</button>
+<div class="controls">
+<button onclick="hit('left')">Leg Shot</button>
+<button onclick="hit('right')">Off Shot</button>
+</div>
 
 <script>
 let canvas = document.getElementById("game");
 let ctx = canvas.getContext("2d");
 
+let ballY = 0;
+let ballX = 175;
+let speed = 4;
+
 let score = 0;
-let balls = 0;
+let balls = 6;
 let wickets = 0;
-let totalBalls = 6;
 
-let ball = {x:175,y:50,vx:0,vy:4,hit:false};
-let bowlingType = "fast";
+let moving = true;
 
-function newBall() {
-  ball = {x:175,y:50,vx:0,vy:4,hit:false};
-
-  // AI chooses bowling type
-  bowlingType = Math.random() > 0.5 ? "fast" : "spin";
-
-  if(bowlingType==="spin"){
-    ball.vx = (Math.random()-0.5)*2;
-  } else {
-    ball.vx = 0;
-  }
+function drawPitch(){
+  ctx.fillStyle = "#c2a679";
+  ctx.fillRect(120, 0, 110, 500);
 }
 
-function drawField(){
-  ctx.fillStyle="#c2a679";
-  ctx.fillRect(130,0,90,500);
-
-  ctx.fillStyle="white";
-  ctx.fillRect(170,420,5,30);
-  ctx.fillRect(180,420,5,30);
-  ctx.fillRect(190,420,5,30);
-}
-
-function drawPlayers(){
-  // bowler
-  ctx.fillStyle="orange";
-  ctx.fillRect(160,20,30,50);
-
-  // batsman
-  ctx.fillStyle="blue";
-  ctx.fillRect(160,380,30,50);
-
-  // bat
-  ctx.fillStyle="yellow";
-  ctx.fillRect(140,420,70,5);
+function drawBatsman(){
+  ctx.fillStyle = "blue";
+  ctx.fillRect(160, 400, 30, 60); // body
+  ctx.fillStyle = "black";
+  ctx.fillRect(170, 360, 10, 40); // bat
 }
 
 function drawBall(){
   ctx.beginPath();
-  ctx.arc(ball.x,ball.y,6,0,Math.PI*2);
-  ctx.fillStyle="red";
+  ctx.arc(ballX, ballY, 8, 0, Math.PI*2);
+  ctx.fillStyle = "red";
   ctx.fill();
 }
 
-function updateBall(){
-  ball.y += ball.vy;
-  ball.x += ball.vx;
-
-  if(ball.y > 430 && !ball.hit){
-    balls++;
-    setResult("Miss!");
-    checkEnd();
-    newBall();
-  }
-
-  if(ball.hit){
-    ball.vy -= 0.3;
-  }
-
-  if(ball.y < 0){
-    newBall();
-  }
-}
-
-function hit(dir){
-  let timing = Math.abs(ball.y - 420);
-
-  let run = 0;
-
-  if(timing < 10){
-    run = 6;
-    setResult("🔥 SIX!");
-  }
-  else if(timing < 25){
-    run = 4;
-    setResult("💥 FOUR!");
-  }
-  else if(timing < 50){
-    run = 1;
-    setResult("Single");
-  }
-  else{
-    if(Math.random()<0.5){
-      wickets++;
-      setResult("❌ OUT!");
-    } else {
-      setResult("Dot ball");
-    }
-  }
-
-  score += run;
-  balls++;
-
-  ball.hit = true;
-  ball.vx = dir * (2 + Math.random()*2);
-  ball.vy = -6;
-
-  updateUI();
-  checkEnd();
-}
-
-function updateUI(){
-  document.getElementById("score").innerText="Score: "+score;
-  document.getElementById("over").innerText="Over: "+Math.floor(balls/6)+"."+(balls%6);
-  document.getElementById("wickets").innerText="Wickets: "+wickets;
-}
-
-function setResult(text){
-  document.getElementById("result").innerText = text + " ("+bowlingType+")";
-}
-
-function checkEnd(){
-  if(balls>=totalBalls || wickets>=3){
-    setTimeout(()=>{
-      alert("Game Over\nScore: "+score);
-    },200);
-  }
-}
-
-function loop(){
+function update(){
   ctx.clearRect(0,0,350,500);
 
-  drawField();
-  drawPlayers();
+  drawPitch();
+  drawBatsman();
   drawBall();
-  updateBall();
 
-  requestAnimationFrame(loop);
+  if(moving){
+    ballY += speed;
+  }
+
+  if(ballY > 480){
+    nextBall();
+  }
+
+  requestAnimationFrame(update);
 }
 
-newBall();
-loop();
+function hit(direction){
+  if(ballY < 350 || ballY > 430) return;
+
+  let run = 0;
+  let text = "";
+
+  if(Math.random() < 0.2){
+    wickets++;
+    text = "❌ OUT!";
+  } else {
+    if(direction === "left"){
+      run = [1,2,4,6][Math.floor(Math.random()*4)];
+    } else {
+      run = [1,2,4][Math.floor(Math.random()*3)];
+    }
+    score += run;
+    text = "🏏 " + run + " runs!";
+  }
+
+  document.getElementById("score").innerText = score;
+  document.getElementById("wickets").innerText = wickets;
+  document.getElementById("result").innerText = text;
+
+  nextBall();
+}
+
+function nextBall(){
+  balls--;
+  document.getElementById("balls").innerText = balls;
+
+  if(balls <= 0){
+    alert("Game Over! Score: " + score);
+    return;
+  }
+
+  ballY = 0;
+  ballX = 120 + Math.random()*110;
+}
+
+update();
 </script>
 
 </body>
