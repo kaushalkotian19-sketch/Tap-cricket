@@ -2,175 +2,133 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tap Cricket V10</title>
+<title>Tap Cricket V11</title>
 
 <style>
 body {
   margin: 0;
   text-align: center;
+  background: #0a7d00;
+  color: white;
   font-family: Arial;
+}
+
+canvas {
   background: linear-gradient(#6ec6ff, #0a7d00);
-  color: white;
 }
-
-#ground {
-  position: relative;
-  height: 380px;
-  overflow: hidden;
-}
-
-#pitch {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100px;
-  height: 100%;
-  background: #8b4513;
-}
-
-#ball {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  background: red;
-  border-radius: 50%;
-  top: 0;
-  left: 50%;
-}
-
-#bat {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  width: 80px;
-  height: 10px;
-  background: yellow;
-  transform: translateX(-50%);
-}
-
-#powerBar {
-  width: 200px;
-  height: 10px;
-  background: #333;
-  margin: 10px auto;
-  position: relative;
-}
-
-#power {
-  width: 20px;
-  height: 100%;
-  background: yellow;
-  position: absolute;
-  left: 0;
-}
-
 button {
-  padding: 15px 30px;
-  font-size: 18px;
-  background: red;
-  color: white;
-  border: none;
-  border-radius: 10px;
+  margin: 10px;
+  padding: 12px 25px;
+  font-size: 16px;
 }
-
 </style>
 </head>
 
 <body>
 
-<h2>🏏 Tap Cricket V10</h2>
+<h2>🏏 Tap Cricket V11</h2>
 <div id="score">Score: 0</div>
 <div id="result"></div>
 
-<div id="powerBar"><div id="power"></div></div>
+<canvas id="game" width="350" height="500"></canvas><br>
 
-<div id="ground">
-  <div id="pitch"></div>
-  <div id="ball"></div>
-  <div id="bat"></div>
-</div>
-
-<button onclick="hit('left')">⬅ LEFT</button>
-<button onclick="hit('right')">RIGHT ➡</button>
+<button onclick="hit(-1)">⬅ Off Side</button>
+<button onclick="hit(1)">Leg Side ➡</button>
 
 <script>
+let canvas = document.getElementById("game");
+let ctx = canvas.getContext("2d");
+
+let ball = { x: 175, y: 50, vx: 0, vy: 4, hit: false };
 let score = 0;
-let ballY = 0;
-let ballX = window.innerWidth / 2;
-let speed = 4;
-let moving = true;
 
-let powerPos = 0;
-let powerDir = 1;
+function drawGround() {
+  // pitch
+  ctx.fillStyle = "#8b4513";
+  ctx.fillRect(140, 0, 70, 500);
 
-function animatePower() {
-  powerPos += powerDir * 4;
-
-  if (powerPos > 180 || powerPos < 0) powerDir *= -1;
-
-  document.getElementById("power").style.left = powerPos + "px";
-
-  requestAnimationFrame(animatePower);
+  // stumps
+  ctx.fillStyle = "white";
+  ctx.fillRect(165, 420, 5, 30);
+  ctx.fillRect(175, 420, 5, 30);
+  ctx.fillRect(185, 420, 5, 30);
 }
 
-function resetBall() {
-  ballY = 0;
-  ballX = window.innerWidth / 2;
-  speed = 4 + Math.random() * 2;
+function drawPlayers() {
+  // batsman
+  ctx.fillStyle = "blue";
+  ctx.fillRect(160, 400, 20, 40);
+
+  // bat
+  ctx.fillStyle = "yellow";
+  ctx.fillRect(140, 420, 50, 5);
+
+  // bowler
+  ctx.fillStyle = "orange";
+  ctx.fillRect(160, 20, 20, 40);
 }
 
-function animateBall() {
-  if (!moving) return;
+function drawBall() {
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, 6, 0, Math.PI * 2);
+  ctx.fillStyle = "red";
+  ctx.fill();
+}
 
-  ballY += speed;
-  document.getElementById("ball").style.top = ballY + "px";
-  document.getElementById("ball").style.left = ballX + "px";
+function updateBall() {
+  ball.y += ball.vy;
+  ball.x += ball.vx;
 
-  if (ballY > 320) {
+  // bounce / miss
+  if (ball.y > 430 && !ball.hit) {
     document.getElementById("result").innerText = "Miss!";
     resetBall();
   }
 
-  requestAnimationFrame(animateBall);
+  // after hit → ball goes up
+  if (ball.hit) {
+    ball.vy -= 0.3; // gravity effect
+  }
+
+  // reset if ball goes out
+  if (ball.y < 0) {
+    resetBall();
+  }
 }
 
 function hit(direction) {
-  let timing = Math.abs(ballY - 300);
+  let timing = Math.abs(ball.y - 420);
 
-  let power = powerPos / 180;
+  if (timing < 25) {
+    ball.hit = true;
+    ball.vx = direction * (2 + Math.random() * 2);
+    ball.vy = -6;
 
-  let run = 0;
+    score += timing < 10 ? 6 : 4;
 
-  if (timing < 15 && power > 0.7) run = 6;
-  else if (timing < 30) run = 4;
-  else if (timing < 60) run = 1;
-  else run = 0;
-
-  score += run;
-
-  document.getElementById("score").innerText = "Score: " + score;
-
-  if (run === 6) document.getElementById("result").innerText = "🔥 SIX!";
-  else if (run === 4) document.getElementById("result").innerText = "💥 FOUR!";
-  else if (run === 1) document.getElementById("result").innerText = "Single";
-  else document.getElementById("result").innerText = "❌ Miss!";
-
-  // BALL FLY ANIMATION
-  let flyX = direction === "left" ? ballX - 150 : ballX + 150;
-  let flyY = ballY - 200;
-
-  document.getElementById("ball").style.transition = "0.5s";
-  document.getElementById("ball").style.left = flyX + "px";
-  document.getElementById("ball").style.top = flyY + "px";
-
-  setTimeout(() => {
-    document.getElementById("ball").style.transition = "none";
-    resetBall();
-  }, 500);
+    document.getElementById("score").innerText = "Score: " + score;
+    document.getElementById("result").innerText = timing < 10 ? "🔥 SIX!" : "💥 FOUR!";
+  } else {
+    document.getElementById("result").innerText = "❌ Miss!";
+  }
 }
 
-animateBall();
-animatePower();
+function resetBall() {
+  ball = { x: 175, y: 50, vx: 0, vy: 4, hit: false };
+}
+
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  drawGround();
+  drawPlayers();
+  drawBall();
+  updateBall();
+
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
 </script>
 
 </body>
