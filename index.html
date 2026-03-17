@@ -1,199 +1,130 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Tap Cricket Pro v4</title>
+  <title>Tap Cricket V5</title>
 </head>
 
-<body style="background:#0b1a2f; color:white; text-align:center; font-family:sans-serif; overflow:hidden;">
+<body style="background:#0b1a2f; color:white; text-align:center; font-family:sans-serif;">
 
-<h1>🏏 Tap Cricket Pro</h1>
+<h1>🏏 Tap Cricket Match</h1>
 
-<h2 id="score">Score: 0</h2>
-<h3 id="balls">Balls left: 6</h3>
-<h3 id="result"></h3>
+<h3>Select Overs</h3>
+<button onclick="startMatch(2)">2 Overs</button>
+<button onclick="startMatch(5)">5 Overs</button>
+<button onclick="startMatch(10)">10 Overs</button>
+<button onclick="startMatch(20)">20 Overs</button>
 
-<div style="position:relative; height:400px; margin-top:20px;">
+<h2 id="info"></h2>
+<h2 id="score"></h2>
+<h3 id="status"></h3>
 
-  <!-- Ball -->
-  <div id="ball" style="
-    position:absolute;
-    width:18px;
-    height:18px;
-    background:red;
-    border-radius:50%;
-    top:0px;
-    left:50%;
-  "></div>
-
-  <!-- Player -->
-  <div style="
-    position:absolute;
-    bottom:40px;
-    left:48%;
-    width:10px;
-    height:40px;
-    background:white;
-  "></div>
-
-  <!-- Bat -->
-  <div id="bat" style="
-    position:absolute;
-    bottom:40px;
-    left:48%;
-    width:60px;
-    height:6px;
-    background:orange;
-    transform-origin:left;
-  "></div>
-
-  <!-- Power meter -->
-  <div style="
-    position:absolute;
-    bottom:10px;
-    left:20%;
-    width:60%;
-    height:10px;
-    background:#222;
-  ">
-    <div id="power" style="
-      width:10%;
-      height:100%;
-      background:yellow;
-    "></div>
-  </div>
-
-</div>
-
-<button onclick="hit()" style="padding:15px; font-size:18px;">HIT</button>
-
-<audio id="hitSound" src="https://www.soundjay.com/button/button-3.mp3"></audio>
-<audio id="missSound" src="https://www.soundjay.com/button/button-10.mp3"></audio>
+<button onclick="playShot()" id="hitBtn" style="display:none; padding:15px; font-size:18px;">HIT</button>
 
 <script>
+let totalBalls = 0;
+let ballsLeft = 0;
+let wickets = 0;
 let score = 0;
-let balls = 6;
-let ballY = 0;
-let ballX = 50;
-let speed = 3;
-let interval;
-let power = 10;
-let powerDir = 1;
+let target = 0;
+let innings = 1;
 
-// Power meter animation
-setInterval(() => {
-  power += powerDir * 2;
-  if (power > 100 || power < 10) powerDir *= -1;
-  document.getElementById("power").style.width = power + "%";
-}, 40);
+function startMatch(overs) {
+  totalBalls = overs * 6;
+  ballsLeft = totalBalls;
+  wickets = 0;
+  score = 0;
+  innings = 1;
 
-// Start ball
-function startBall() {
-  ballY = 0;
-  ballX = 40 + Math.random() * 20;
-  speed = 3 + Math.random() * 2;
+  document.getElementById("hitBtn").style.display = "inline";
+  updateDisplay("Batting - Set your target");
+}
 
-  let ball = document.getElementById("ball");
-  ball.style.top = "0px";
-  ball.style.left = ballX + "%";
+function playShot() {
+  if (ballsLeft <= 0 || wickets >= 3) return nextInnings();
 
-  interval = setInterval(() => {
-    ballY += speed;
-    ball.style.top = ballY + "px";
+  let outcome = Math.random();
 
-    if (ballY > 300) {
+  if (outcome < 0.15) {
+    wickets++;
+    updateDisplay("❌ OUT!");
+  } else {
+    let runs = [1,2,4,6][Math.floor(Math.random()*4)];
+    score += runs;
+    updateDisplay("Scored " + runs);
+  }
+
+  ballsLeft--;
+
+  if (ballsLeft === 0 || wickets >= 3) {
+    nextInnings();
+  }
+}
+
+function nextInnings() {
+  if (innings === 1) {
+    target = score + 1;
+    innings = 2;
+
+    ballsLeft = totalBalls;
+    wickets = 0;
+    score = 0;
+
+    document.getElementById("hitBtn").style.display = "none";
+
+    document.getElementById("info").innerText = "AI chasing: Target " + target;
+
+    setTimeout(aiPlay, 1000);
+  } else {
+    endMatch();
+  }
+}
+
+function aiPlay() {
+  let aiScore = 0;
+  let aiWickets = 0;
+  let balls = totalBalls;
+
+  let interval = setInterval(() => {
+    if (balls <= 0 || aiWickets >= 3 || aiScore >= target) {
       clearInterval(interval);
-      out();
+      showResult(aiScore);
+      return;
     }
-  }, 20);
-}
 
-function hit() {
-  if (balls <= 0) return;
+    let outcome = Math.random();
 
-  clearInterval(interval);
-
-  let bat = document.getElementById("bat");
-  bat.style.transform = "rotate(-60deg)";
-  setTimeout(() => {
-    bat.style.transform = "rotate(0deg)";
-  }, 200);
-
-  let run = 0;
-  let text = "";
-
-  // Timing + power logic
-  if (ballY > 230 && ballY < 300) {
-    if (power > 80) {
-      run = 6;
-      text = "🔥 SIX!";
-      flash();
-    } else if (power > 50) {
-      run = 4;
-      text = "👍 FOUR!";
+    if (outcome < 0.2) {
+      aiWickets++;
     } else {
-      run = 1;
-      text = "🙂 Single";
+      let runs = [1,2,4,6][Math.floor(Math.random()*4)];
+      aiScore += runs;
     }
 
-    // Ball goes up animation
-    let ball = document.getElementById("ball");
-    let up = 300;
-    let anim = setInterval(() => {
-      up -= 10;
-      ball.style.top = up + "px";
-      if (up < 50) clearInterval(anim);
-    }, 20);
+    balls--;
 
-    document.getElementById("hitSound").play();
+    document.getElementById("status").innerText =
+      "AI Score: " + aiScore + " | Wickets: " + aiWickets;
 
+  }, 500);
+}
+
+function showResult(aiScore) {
+  if (aiScore >= target) {
+    alert("😢 You Lost! AI scored " + aiScore);
   } else {
-    return out();
-  }
-
-  score += run;
-  balls--;
-
-  update(text);
-
-  if (balls > 0) {
-    setTimeout(startBall, 800);
-  } else {
-    endGame();
+    alert("🎉 You Won! AI scored " + aiScore);
   }
 }
 
-function out() {
-  balls--;
-  update("❌ OUT!");
-  document.getElementById("missSound").play();
+function updateDisplay(msg) {
+  document.getElementById("info").innerText =
+    "Balls left: " + ballsLeft + " | Wickets: " + wickets;
 
-  if (balls > 0) {
-    setTimeout(startBall, 800);
-  } else {
-    endGame();
-  }
+  document.getElementById("score").innerText =
+    "Score: " + score;
+
+  document.getElementById("status").innerText = msg;
 }
-
-function flash() {
-  document.body.style.background = "#333";
-  setTimeout(() => {
-    document.body.style.background = "#0b1a2f";
-  }, 100);
-}
-
-function update(text) {
-  document.getElementById("score").innerText = "Score: " + score;
-  document.getElementById("balls").innerText = "Balls left: " + balls;
-  document.getElementById("result").innerText = text;
-}
-
-function endGame() {
-  setTimeout(() => {
-    alert("🏏 Game Over!\nScore: " + score);
-  }, 200);
-}
-
-startBall();
 </script>
 
 </body>
