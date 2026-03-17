@@ -75,6 +75,11 @@ button {
 <div id="scores"></div>
 </div>
 
+<!-- 🔊 SOUND -->
+<audio id="bgm" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
+<audio id="hitSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+<audio id="missSound" src="https://www.soundjay.com/button/beep-10.wav"></audio>
+
 <script>
 let marker = document.getElementById("marker");
 let perfect = document.getElementById("perfect");
@@ -108,17 +113,7 @@ function updateLeaderboard(){
 }
 updateLeaderboard();
 
-// sound
-function beep(freq){
-  let ctx = new (window.AudioContext || window.webkitAudioContext)();
-  let osc = ctx.createOscillator();
-  osc.frequency.value = freq;
-  osc.connect(ctx.destination);
-  osc.start();
-  setTimeout(()=>osc.stop(),100);
-}
-
-// start game
+// START GAME
 function startGame(){
   if(balance < 100){
     alert("Not enough ION!");
@@ -132,11 +127,13 @@ function startGame(){
   timeLeft = 10;
   gameActive = true;
 
+  document.getElementById("bgm").play();
+
   animate();
   startTimer();
 }
 
-// animate
+// ANIMATION
 function animate(){
   if(!gameActive) return;
 
@@ -157,27 +154,27 @@ function animate(){
   requestAnimationFrame(animate);
 }
 
-// hit
+// HIT
 function hit(){
   if(!gameActive) return;
 
   if(pos >= zonePos && pos <= zonePos+60){
     score += 10;
     speed += 0.2;
-    beep(600);
+    document.getElementById("hitSound").play();
   }
   else if(pos >= zonePos-30 && pos <= zonePos+90){
     score += 5;
-    beep(400);
+    document.getElementById("hitSound").play();
   }
   else{
-    beep(200);
+    document.getElementById("missSound").play();
   }
 
   document.getElementById("score").innerText = score;
 }
 
-// timer
+// TIMER
 function startTimer(){
   let t = setInterval(()=>{
     if(!gameActive){
@@ -196,7 +193,7 @@ function startTimer(){
   },1000);
 }
 
-// turn system
+// TURN SYSTEM
 function endTurn(){
   gameActive = false;
 
@@ -211,7 +208,7 @@ function endTurn(){
   }
 }
 
-// winner
+// WINNER
 function decideWinner(){
   let winner = "";
 
@@ -233,14 +230,14 @@ function decideWinner(){
 
   document.getElementById("balance").innerText = balance;
   document.getElementById("result").innerText = "🏆 Winner: " + winner;
+
+  document.getElementById("bgm").pause();
 }
 
-// share score
+// SHARE
 function shareScore(){
   let text = "🎯 I scored " + score + " in Perfect Hit Arena! Try beat me 🔥";
-
   let url = "https://t.me/share/url?text=" + encodeURIComponent(text);
-
   window.open(url);
 }
 </script>
