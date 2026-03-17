@@ -10,66 +10,38 @@ body {
   text-align: center;
 }
 
-/* TOP BAR */
 #topBar {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 12px 15px; /* FIXED spacing */
+  padding: 12px 15px;
   background: #0b1a2e;
-  position: relative;
-  z-index: 100;
 }
 
-#menuBtn {
-  font-size: 24px;
-  cursor: pointer;
-  padding: 5px 10px; /* FIX: makes it visible fully */
-}
+#menuBtn { font-size: 24px; cursor: pointer; }
 
-/* BALANCE */
 #balance {
   background: #132b4a;
   padding: 6px 14px;
   border-radius: 20px;
 }
 
-/* OVERLAY */
 #overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100%; height: 100%;
   background: rgba(0,0,0,0.5);
   display: none;
-  z-index: 5;
 }
 
-/* SIDE MENU */
 #sideMenu {
   position: fixed;
-  top: 0;
   left: -220px;
   width: 200px;
   height: 100%;
   background: #0f2238;
   padding: 20px;
   transition: 0.3s;
-  z-index: 10;
 }
 
-#sideMenu button {
-  width: 100%;
-  margin: 10px 0;
-  padding: 12px;
-  background: #1e293b;
-  color: white;
-  border: none;
-  border-radius: 8px;
-}
-
-/* GAME */
 #gameBox {
   width: 300px;
   height: 40px;
@@ -95,7 +67,6 @@ body {
   left: 0;
 }
 
-/* BUTTON */
 button {
   padding: 12px;
   margin: 10px;
@@ -104,54 +75,57 @@ button {
   border-radius: 10px;
   color: white;
 }
-</style></head><body><!-- TOP BAR --><div id="topBar">
+</style></head><body><div id="topBar">
   <div id="menuBtn" onclick="toggleMenu()">☰</div>
   <div id="balance">💰 500 ION</div>
 </div><div id="overlay" onclick="toggleMenu()"></div><div id="sideMenu">
-  <h3>Menu</h3>
-  <button onclick="goPage('home')">🏠 Dashboard</button>
-  <button onclick="goPage('game')">🎮 Play</button>
-  <button onclick="goPage('profile')">👤 Profile</button>
-</div><div id="content"></div><!-- 🔊 SOUND --><audio id="bgMusic" loop>
-  <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_115b9bce08.mp3">
-</audio><audio id="hitSound">
-  <source src="https://cdn.pixabay.com/audio/2022/03/10/audio_c1e92f4a2f.mp3">
-</audio><script>
+  <button onclick="goPage('home')">Dashboard</button>
+  <button onclick="goPage('game')">Play</button>
+  <button onclick="goPage('profile')">Profile</button>
+</div><div id="content"></div><audio id="bgMusic" loop src="https://cdn.pixabay.com/audio/2022/03/15/audio_115b9bce08.mp3"></audio> <audio id="hitSound" src="https://cdn.pixabay.com/audio/2022/03/10/audio_c1e92f4a2f.mp3"></audio>
+
+<script>
 let state = {
   coins: 500,
   page: "home",
-  menu: false,
   pos: 0,
   speed: 3,
-  score: 0,
-  turn: "Player 1",
-  musicStarted: false
+  scoreP1: 0,
+  scoreP2: 0,
+  turn: "P1",
+  combo: 0,
+  multiplier: 1,
+  titles: [],
+  pool: 0
 };
 
-/* MENU */
 function toggleMenu() {
-  state.menu = !state.menu;
-  document.getElementById("sideMenu").style.left = state.menu ? "0" : "-220px";
-  document.getElementById("overlay").style.display = state.menu ? "block" : "none";
+  let menu = document.getElementById("sideMenu");
+  let overlay = document.getElementById("overlay");
+  if (menu.style.left === "0px") {
+    menu.style.left = "-220px";
+    overlay.style.display = "none";
+  } else {
+    menu.style.left = "0";
+    overlay.style.display = "block";
+  }
 }
 
-/* NAVIGATION */
 function goPage(p) {
   state.page = p;
   toggleMenu();
   render();
 }
 
-/* HOME */
 function homePage() {
-  return `<h1>🎯 Perfect Hit Arena</h1>`;
+  return `<h1>Perfect Hit Arena</h1>`;
 }
 
-/* GAME */
 function gamePage() {
   return `
-    <h2>${state.turn}</h2>
-    <h3>Score: ${state.score}</h3>
+    <h2>${state.turn === "P1" ? "Player 1" : "Player 2"}</h2>
+    <h3>P1: ${state.scoreP1} | P2: ${state.scoreP2}</h3>
+    <h4>Combo: ${state.combo} | x${state.multiplier}</h4>
 
     <div id="gameBox">
       <div id="perfect"></div>
@@ -163,38 +137,23 @@ function gamePage() {
   `;
 }
 
-/* MOVE BAR */
 function moveBar() {
   if (state.page !== "game") return;
-
   let bar = document.getElementById("hitZone");
   if (!bar) return;
 
   state.pos += state.speed;
-
-  if (state.pos > 290 || state.pos < 0) {
-    state.speed *= -1;
-  }
-
+  if (state.pos > 290 || state.pos < 0) state.speed *= -1;
   bar.style.left = state.pos + "px";
 }
 setInterval(moveBar, 20);
 
-/* GAME LOGIC */
 function enterGame() {
   if (state.coins >= 100) {
     state.coins -= 100;
-    state.score = 0;
+    state.pool += 200;
+    document.getElementById("bgMusic").play();
     updateBalance();
-
-    // 🔊 FIXED MUSIC (user interaction required)
-    if (!state.musicStarted) {
-      let music = document.getElementById("bgMusic");
-      music.play().catch(() => {});
-      state.musicStarted = true;
-    }
-  } else {
-    alert("Not enough ION");
   }
 }
 
@@ -202,51 +161,70 @@ function hit() {
   let perfectStart = 120;
   let perfectEnd = 180;
 
-  let hitSound = document.getElementById("hitSound");
-  hitSound.play().catch(() => {});
+  document.getElementById("hitSound").play();
 
-  if (state.pos > perfectStart && state.pos < perfectEnd) {
-    state.score += 10;
-    state.coins += 20;
-    alert("Perfect Hit!");
+  let success = state.pos > perfectStart && state.pos < perfectEnd;
+
+  if (success) {
+    state.combo++;
+    state.multiplier = 1 + Math.floor(state.combo / 3);
+
+    let points = 10 * state.multiplier;
+
+    if (state.turn === "P1") state.scoreP1 += points;
+    else state.scoreP2 += points;
+
   } else {
-    alert("Miss!");
+    state.combo = 0;
+    state.multiplier = 1;
+  }
+
+  // TITLE SYSTEM
+  if (state.scoreP1 >= 50 || state.scoreP2 >= 50) {
+    if (!state.titles.includes("Sharpshooter")) state.titles.push("Sharpshooter");
+  }
+  if (state.scoreP1 >= 100 || state.scoreP2 >= 100) {
+    if (!state.titles.includes("Legend")) state.titles.push("Legend");
+  }
+
+  // SWITCH PLAYER
+  state.turn = state.turn === "P1" ? "P2" : "P1";
+
+  // END GAME (5 turns each approx)
+  if (state.scoreP1 >= 100 || state.scoreP2 >= 100) {
+    let winner = state.scoreP1 > state.scoreP2 ? "Player 1" : "Player 2";
+    alert(winner + " wins " + state.pool + " ION!");
+    state.coins += state.pool;
+    state.pool = 0;
+    state.scoreP1 = 0;
+    state.scoreP2 = 0;
   }
 
   state.pos = 0;
-
-  state.turn = state.turn === "Player 1" ? "Player 2" : "Player 1";
-
   updateBalance();
   render();
 }
 
-/* PROFILE */
 function profilePage() {
   return `
     <h2>Profile</h2>
     <p>Coins: ${state.coins}</p>
-    <p>Score: ${state.score}</p>
+    <p>Titles: ${state.titles.join(", ")}</p>
   `;
 }
 
-/* RENDER */
 function render() {
   let html = "";
-
   if (state.page === "home") html = homePage();
   if (state.page === "game") html = gamePage();
   if (state.page === "profile") html = profilePage();
-
   document.getElementById("content").innerHTML = html;
 }
 
-/* BALANCE */
 function updateBalance() {
   document.getElementById("balance").innerText = "💰 " + state.coins + " ION";
 }
 
-/* INIT */
 render();
 </script></body>
 </html>
