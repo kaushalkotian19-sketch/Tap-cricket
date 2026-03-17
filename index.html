@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Tap Cricket Pro</title>
+  <title>Tap Cricket Pro v3</title>
 </head>
 
 <body style="background:#0b1a2f; color:white; text-align:center; font-family:sans-serif;">
@@ -12,28 +12,38 @@
 <h3 id="balls">Balls left: 6</h3>
 <h3 id="result"></h3>
 
-<!-- Game Area -->
-<div style="position:relative; height:300px; margin-top:20px;">
+<div style="position:relative; height:350px; margin-top:20px;">
 
   <!-- Ball -->
   <div id="ball" style="
     position:absolute;
-    width:20px;
-    height:20px;
+    width:18px;
+    height:18px;
     background:red;
     border-radius:50%;
     top:0px;
     left:50%;
   "></div>
 
-  <!-- Bat Zone -->
-  <div style="
+  <!-- Moving Hit Zone -->
+  <div id="zone" style="
+    position:absolute;
+    bottom:40px;
+    width:80px;
+    height:15px;
+    background:yellow;
+    left:40%;
+  "></div>
+
+  <!-- Bat -->
+  <div id="bat" style="
     position:absolute;
     bottom:20px;
-    left:40%;
-    width:20%;
-    height:20px;
-    background:green;
+    left:45%;
+    width:60px;
+    height:10px;
+    background:orange;
+    transform-origin:left;
   "></div>
 
 </div>
@@ -46,19 +56,34 @@
 let score = 0;
 let balls = 6;
 let ballY = 0;
+let ballX = 50;
 let speed = 3;
 let interval;
+let zoneX = 40;
+let zoneDir = 1;
 
-// Start bowling
+// Move hit zone left-right
+setInterval(() => {
+  zoneX += zoneDir * 2;
+  if (zoneX > 70 || zoneX < 10) zoneDir *= -1;
+  document.getElementById("zone").style.left = zoneX + "%";
+}, 30);
+
+// Start ball
 function startBall() {
   ballY = 0;
-  document.getElementById("ball").style.top = ballY + "px";
+  ballX = 40 + Math.random() * 20;
+  speed = 3 + Math.random() * 2;
+
+  let ball = document.getElementById("ball");
+  ball.style.top = "0px";
+  ball.style.left = ballX + "%";
 
   interval = setInterval(() => {
     ballY += speed;
-    document.getElementById("ball").style.top = ballY + "px";
+    ball.style.top = ballY + "px";
 
-    if (ballY > 260) {
+    if (ballY > 300) {
       clearInterval(interval);
       out();
     }
@@ -70,25 +95,32 @@ function hit() {
 
   clearInterval(interval);
 
+  // Bat swing animation
+  let bat = document.getElementById("bat");
+  bat.style.transform = "rotate(-45deg)";
+  setTimeout(() => {
+    bat.style.transform = "rotate(0deg)";
+  }, 200);
+
+  let zoneLeft = zoneX;
+  let zoneRight = zoneX + 10;
+
   let run = 0;
   let text = "";
 
-  // Perfect timing
-  if (ballY > 220 && ballY < 260) {
-    run = 6;
-    text = "🔥 SIX!";
-  }
-  // Good timing
-  else if (ballY > 180 && ballY <= 220) {
-    run = 4;
-    text = "👍 FOUR!";
-  }
-  // Late hit
-  else if (ballY > 140 && ballY <= 180) {
-    run = 1;
-    text = "🙂 Single";
-  }
-  else {
+  // Check position match
+  if (ballY > 230 && ballY < 300) {
+    if (ballX >= zoneLeft && ballX <= zoneRight) {
+      run = 6;
+      text = "🔥 PERFECT SIX!";
+    } else if (Math.abs(ballX - zoneLeft) < 10) {
+      run = 4;
+      text = "👍 FOUR!";
+    } else {
+      run = 1;
+      text = "🙂 EDGE";
+    }
+  } else {
     return out();
   }
 
@@ -97,10 +129,8 @@ function hit() {
 
   update(text);
 
-  speed += 0.5; // increase difficulty
-
   if (balls > 0) {
-    setTimeout(startBall, 500);
+    setTimeout(startBall, 700);
   } else {
     endGame();
   }
@@ -111,7 +141,7 @@ function out() {
   update("❌ OUT!");
 
   if (balls > 0) {
-    setTimeout(startBall, 500);
+    setTimeout(startBall, 700);
   } else {
     endGame();
   }
@@ -129,7 +159,7 @@ function endGame() {
   }, 200);
 }
 
-// Start first ball
+// Start game
 startBall();
 </script>
 
