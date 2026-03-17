@@ -1,73 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Tap Cricket Pro</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      text-align: center;
-      background: #0b1a2f;
-      color: white;
-      font-family: Arial;
-    }
-    #bar {
-      width: 300px;
-      height: 20px;
-      background: gray;
-      margin: 40px auto;
-      position: relative;
-    }
-    #target {
-      width: 60px;
-      height: 20px;
-      background: green;
-      position: absolute;
-      left: 120px;
-    }
-    #ball {
-      width: 20px;
-      height: 20px;
-      background: yellow;
-      position: absolute;
-      left: 0;
-    }
-    button {
-      margin-top: 30px;
-      padding: 15px 30px;
-      font-size: 18px;
-      background: red;
-      color: white;
-      border: none;
-    }
-  </style>
-</head>
-
-<body>
-
-<h1>🏏 Tap Cricket Pro</h1>
-<h2 id="score">Score: 0</h2>
-<p id="balls">Balls left: 6</p>
-
-<div id="bar">
-  <div id="target"></div>
-  <div id="ball"></div>
-</div>
-
-<button onclick="hit()">HIT</button>
-
-<script>
-let score = 0;
-let balls = 6;
-let pos = 0;
-let direction = 2;
-
-function moveBall() {
-  pos += direction;
-  if (pos > 280 || pos < 0) direction *= -1;
-  document.getElementById("ball").style.left = pos + "px";
-}
-setInterval(moveBall, 20);
-
 function hit() {
   if (balls <= 0) return;
 
@@ -76,13 +6,17 @@ function hit() {
   let targetEnd = 180;
 
   let run = 0;
+  let text = "";
 
   if (ballPos >= targetStart && ballPos <= targetEnd) {
-    run = 6; // perfect hit
+    run = 6;
+    text = "🔥 SIX!";
   } else if (ballPos >= 90 && ballPos <= 210) {
-    run = 2; // decent
+    run = 2;
+    text = "👍 Good Shot!";
   } else {
-    run = 0; // miss
+    run = 0;
+    text = "❌ Miss!";
   }
 
   score += run;
@@ -90,14 +24,11 @@ function hit() {
 
   document.getElementById("score").innerText = "Score: " + score;
   document.getElementById("balls").innerText = "Balls left: " + balls;
+  document.getElementById("result").innerText = text;
 
   if (balls === 0) {
     setTimeout(() => {
-      alert("Game Over! Score: " + score);
-    }, 100);
+      alert("🏏 Game Over!\nScore: " + score);
+    }, 200);
   }
 }
-</script>
-
-</body>
-</html>
