@@ -1,262 +1,221 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Perfect Hit Arena</title>
-
-<style>
+<title>Perfect Hit Arena</title><style>
 body {
-  margin:0;
-  font-family:Arial;
-  text-align:center;
-  background:#0f172a;
-  color:white;
+  margin: 0;
+  font-family: Arial;
+  background: #0f172a;
+  color: white;
+  text-align: center;
 }
 
-h1 { margin-top:15px; }
+/* TOP BAR */
+#topBar {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  background: #0b1a2e;
+}
 
+#menuBtn {
+  font-size: 22px;
+  cursor: pointer;
+}
+
+#balance {
+  background: #132b4a;
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
+/* SIDE MENU */
+#sideMenu {
+  position: fixed;
+  top: 0;
+  left: -220px;
+  width: 200px;
+  height: 100%;
+  background: #0f2238;
+  padding: 20px;
+  transition: 0.3s;
+}
+
+#sideMenu button {
+  width: 100%;
+  margin: 10px 0;
+  padding: 10px;
+  background: #1e293b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+}
+
+/* GAME */
 #gameBox {
-  width:300px;
-  height:40px;
-  background:#1e293b;
-  margin:20px auto;
-  position:relative;
-  border-radius:10px;
+  width: 300px;
+  height: 40px;
+  background: #1e293b;
+  margin: 20px auto;
+  position: relative;
+  border-radius: 10px;
 }
 
-.zone { position:absolute; height:100%; }
-
-#perfect { background:#22c55e; }
-#good { background:#eab308; opacity:0.5; }
-
-#marker {
-  width:10px;
-  height:100%;
-  background:#ef4444;
-  position:absolute;
+.zone {
+  position: absolute;
+  height: 100%;
 }
 
+#perfect {
+  background: #22c55e;
+  left: 40%;
+  width: 20%;
+}
+
+#hitZone {
+  width: 10px;
+  height: 100%;
+  background: red;
+  position: absolute;
+  left: 0;
+}
+
+/* BUTTON */
 button {
-  padding:10px 20px;
-  margin:5px;
-  border:none;
-  border-radius:8px;
-  background:#ef4444;
-  color:white;
+  padding: 12px;
+  margin: 10px;
+  background: #ef4444;
+  border: none;
+  border-radius: 10px;
+  color: white;
 }
-</style>
-</head>
+</style></head><body><div id="topBar">
+  <div id="menuBtn" onclick="toggleMenu()">☰</div>
+  <div id="balance">💰 500 ION</div>
+</div><div id="sideMenu">
+  <h3>Menu</h3>
+  <button onclick="goPage('home')">🏠 Dashboard</button>
+  <button onclick="goPage('game')">🎮 Play</button>
+  <button onclick="goPage('profile')">👤 Profile</button>
+</div><div id="content"></div><script>
+let state = {
+  coins: 500,
+  page: "home",
+  menu: false,
+  pos: 0,
+  speed: 3,
+  score: 0
+};
 
-<body>
-
-<h1>🎯 Perfect Hit Arena</h1>
-
-<div>💰 Balance: <span id="balance">500</span> ION</div>
-<div>🏟 Arena: <span id="arenaText">1</span></div>
-<div>👑 Title: <span id="titleText">Beginner</span></div>
-<div>👤 Turn: <span id="playerTurn">Player 1</span></div>
-<div>Score: <span id="score">0</span></div>
-<div>Time: <span id="timer">10</span>s</div>
-
-<div id="gameBox">
-  <div id="good" class="zone"></div>
-  <div id="perfect" class="zone"></div>
-  <div id="marker"></div>
-</div>
-
-<button onclick="startGame()">Enter (100 ION)</button>
-<button onclick="hit()">HIT</button>
-
-<div id="result"></div>
-
-<!-- SOUND -->
-<audio id="bgm" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
-<audio id="hitSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
-<audio id="missSound" src="https://www.soundjay.com/button/beep-10.wav"></audio>
-
-<script>
-let marker = document.getElementById("marker");
-let perfect = document.getElementById("perfect");
-let good = document.getElementById("good");
-
-let score = 0;
-let timeLeft = 10;
-let speed = 4;
-let pos = 0;
-let direction = 1;
-let gameActive = false;
-
-let zonePos = 120;
-let balance = 500;
-
-let player = 1;
-let p1Score = 0;
-let p2Score = 0;
-
-// ARENA SYSTEM
-let arena = parseInt(localStorage.getItem("arena") || 1);
-document.getElementById("arenaText").innerText = arena;
-
-// TITLE SYSTEM
-function getTitle(score){
-  if(score >= 250) return "🏆 Legend";
-  if(score >= 150) return "🔥 Perfect King";
-  if(score >= 80) return "🎯 Sharpshooter";
-  return "Beginner";
+/* MENU */
+function toggleMenu() {
+  state.menu = !state.menu;
+  document.getElementById("sideMenu").style.left = state.menu ? "0" : "-220px";
 }
 
-// START GAME
-function startGame(){
-  if(balance < 100){
-    alert("Not enough ION!");
-    return;
-  }
-
-  balance -= 100;
-  document.getElementById("balance").innerText = balance;
-
-  score = 0;
-  timeLeft = 10;
-  gameActive = true;
-
-  // difficulty
-  if(arena === 1){
-    speed = 4;
-    perfect.style.width = "60px";
-  }
-  if(arena === 2){
-    speed = 6;
-    perfect.style.width = "50px";
-  }
-  if(arena === 3){
-    speed = 8;
-    perfect.style.width = "40px";
-  }
-
-  good.style.width = "120px";
-
-  document.getElementById("bgm").play();
-
-  animate();
-  startTimer();
+/* NAVIGATION */
+function goPage(p) {
+  state.page = p;
+  toggleMenu();
+  render();
 }
 
-// ANIMATION
-function animate(){
-  if(!gameActive) return;
-
-  pos += speed * direction;
-
-  if(pos >= 290 || pos <= 0){
-    direction *= -1;
-  }
-
-  marker.style.left = pos + "px";
-
-  zonePos += 1;
-  if(zonePos > 200) zonePos = 80;
-
-  perfect.style.left = zonePos + "px";
-  good.style.left = (zonePos - 30) + "px";
-
-  requestAnimationFrame(animate);
+/* HOME */
+function homePage() {
+  return `
+    <h1>🎯 Perfect Hit Arena</h1>
+    <button onclick="goPage('game')">Play</button>
+  `;
 }
 
-// HIT
-function hit(){
-  if(!gameActive) return;
+/* GAME */
+function gamePage() {
+  return `
+    <h2>Score: ${state.score}</h2>
+    <div id="gameBox">
+      <div id="perfect" class="zone"></div>
+      <div id="hitZone"></div>
+    </div>
 
-  if(pos >= zonePos && pos <= zonePos + parseInt(perfect.style.width)){
-    score += 10;
-    speed += 0.2;
-    document.getElementById("hitSound").play();
-  }
-  else if(pos >= zonePos-30 && pos <= zonePos+90){
-    score += 5;
-    document.getElementById("hitSound").play();
-  }
-  else{
-    document.getElementById("missSound").play();
-  }
-
-  document.getElementById("score").innerText = score;
+    <button onclick="enterGame()">Enter (100 ION)</button>
+    <button onclick="hit()">HIT</button>
+  `;
 }
 
-// TIMER
-function startTimer(){
-  let t = setInterval(()=>{
-    if(!gameActive){
-      clearInterval(t);
-      return;
-    }
+/* MOVE BAR ONLY IN GAME PAGE */
+function moveBar() {
+  if (state.page !== "game") return;
 
-    timeLeft--;
-    document.getElementById("timer").innerText = timeLeft;
+  let bar = document.getElementById("hitZone");
+  if (!bar) return;
 
-    if(timeLeft <= 0){
-      clearInterval(t);
-      endTurn();
-    }
+  state.pos += state.speed;
 
-  },1000);
+  if (state.pos > 290 || state.pos < 0) {
+    state.speed *= -1;
+  }
+
+  bar.style.left = state.pos + "px";
 }
 
-// TURN SYSTEM
-function endTurn(){
-  gameActive = false;
+setInterval(moveBar, 20);
 
-  if(player === 1){
-    p1Score = score;
-    player = 2;
-    document.getElementById("playerTurn").innerText = "Player 2";
-    alert("Player 2 Turn!");
+/* GAME LOGIC */
+function enterGame() {
+  if (state.coins >= 100) {
+    state.coins -= 100;
+    state.score = 0;
+    updateBalance();
   } else {
-    p2Score = score;
-    decideWinner();
+    alert("Not enough ION");
   }
 }
 
-// WINNER + UNLOCK
-function decideWinner(){
-  let winnerScore = Math.max(p1Score, p2Score);
+function hit() {
+  let perfectStart = 120;
+  let perfectEnd = 180;
 
-  let title = getTitle(winnerScore);
-  document.getElementById("titleText").innerText = title;
-
-  // unlock arenas
-  if(winnerScore >= 100 && arena < 2){
-    arena = 2;
-    localStorage.setItem("arena", 2);
-    alert("🔥 Arena 2 Unlocked!");
-  }
-
-  if(winnerScore >= 200 && arena < 3){
-    arena = 3;
-    localStorage.setItem("arena", 3);
-    alert("🔥 Arena 3 Unlocked!");
-  }
-
-  document.getElementById("arenaText").innerText = arena;
-
-  let winner = "";
-
-  if(p1Score > p2Score){
-    winner = "Player 1";
-    balance += 200;
-  } else if(p2Score > p1Score){
-    winner = "Player 2";
-    balance += 200;
+  if (state.pos > perfectStart && state.pos < perfectEnd) {
+    state.score += 10;
+    state.coins += 20;
+    alert("Perfect Hit!");
   } else {
-    winner = "Draw";
-    balance += 100;
+    alert("Miss!");
   }
 
-  document.getElementById("balance").innerText = balance;
-  document.getElementById("result").innerText = "🏆 Winner: " + winner;
+  // 🔥 FIX APPLIED HERE
+  state.pos = 0;
 
-  document.getElementById("bgm").pause();
+  updateBalance();
+  render();
 }
-</script>
 
-</body>
+/* PROFILE */
+function profilePage() {
+  return `
+    <h2>Profile</h2>
+    <p>Coins: ${state.coins}</p>
+    <p>Score: ${state.score}</p>
+  `;
+}
+
+/* RENDER */
+function render() {
+  let html = "";
+
+  if (state.page === "home") html = homePage();
+  if (state.page === "game") html = gamePage();
+  if (state.page === "profile") html = profilePage();
+
+  document.getElementById("content").innerHTML = html;
+}
+
+/* BALANCE UPDATE */
+function updateBalance() {
+  document.getElementById("balance").innerText = "💰 " + state.coins + " ION";
+}
+
+/* INIT */
+render();
+</script></body>
 </html>
