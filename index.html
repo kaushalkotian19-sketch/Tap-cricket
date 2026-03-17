@@ -14,15 +14,23 @@ body {
 #topBar {
   display: flex;
   justify-content: space-between;
-  padding: 10px;
+  align-items: center;
+  padding: 12px 15px; /* FIXED spacing */
   background: #0b1a2e;
+  position: relative;
+  z-index: 100;
 }
 
-#menuBtn { font-size: 22px; cursor: pointer; }
+#menuBtn {
+  font-size: 24px;
+  cursor: pointer;
+  padding: 5px 10px; /* FIX: makes it visible fully */
+}
 
+/* BALANCE */
 #balance {
   background: #132b4a;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 20px;
 }
 
@@ -35,6 +43,7 @@ body {
   height: 100%;
   background: rgba(0,0,0,0.5);
   display: none;
+  z-index: 5;
 }
 
 /* SIDE MENU */
@@ -53,7 +62,7 @@ body {
 #sideMenu button {
   width: 100%;
   margin: 10px 0;
-  padding: 10px;
+  padding: 12px;
   background: #1e293b;
   color: white;
   border: none;
@@ -95,7 +104,7 @@ button {
   border-radius: 10px;
   color: white;
 }
-</style></head><body><div id="topBar">
+</style></head><body><!-- TOP BAR --><div id="topBar">
   <div id="menuBtn" onclick="toggleMenu()">☰</div>
   <div id="balance">💰 500 ION</div>
 </div><div id="overlay" onclick="toggleMenu()"></div><div id="sideMenu">
@@ -103,8 +112,10 @@ button {
   <button onclick="goPage('home')">🏠 Dashboard</button>
   <button onclick="goPage('game')">🎮 Play</button>
   <button onclick="goPage('profile')">👤 Profile</button>
-</div><div id="content"></div><!-- 🔊 BACKGROUND MUSIC --><audio id="bgMusic" loop>
+</div><div id="content"></div><!-- 🔊 SOUND --><audio id="bgMusic" loop>
   <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_115b9bce08.mp3">
+</audio><audio id="hitSound">
+  <source src="https://cdn.pixabay.com/audio/2022/03/10/audio_c1e92f4a2f.mp3">
 </audio><script>
 let state = {
   coins: 500,
@@ -113,7 +124,8 @@ let state = {
   pos: 0,
   speed: 3,
   score: 0,
-  turn: "Player 1"
+  turn: "Player 1",
+  musicStarted: false
 };
 
 /* MENU */
@@ -175,8 +187,12 @@ function enterGame() {
     state.score = 0;
     updateBalance();
 
-    // 🔊 start music
-    document.getElementById("bgMusic").play();
+    // 🔊 FIXED MUSIC (user interaction required)
+    if (!state.musicStarted) {
+      let music = document.getElementById("bgMusic");
+      music.play().catch(() => {});
+      state.musicStarted = true;
+    }
   } else {
     alert("Not enough ION");
   }
@@ -185,6 +201,9 @@ function enterGame() {
 function hit() {
   let perfectStart = 120;
   let perfectEnd = 180;
+
+  let hitSound = document.getElementById("hitSound");
+  hitSound.play().catch(() => {});
 
   if (state.pos > perfectStart && state.pos < perfectEnd) {
     state.score += 10;
@@ -196,7 +215,6 @@ function hit() {
 
   state.pos = 0;
 
-  // 🔁 SWITCH PLAYER
   state.turn = state.turn === "Player 1" ? "Player 2" : "Player 1";
 
   updateBalance();
@@ -223,7 +241,7 @@ function render() {
   document.getElementById("content").innerHTML = html;
 }
 
-/* UPDATE BALANCE */
+/* BALANCE */
 function updateBalance() {
   document.getElementById("balance").innerText = "💰 " + state.coins + " ION";
 }
