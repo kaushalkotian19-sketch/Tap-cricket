@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tap Cricket V9</title>
+<title>Tap Cricket V10</title>
 
 <style>
 body {
@@ -12,8 +12,6 @@ body {
   background: linear-gradient(#6ec6ff, #0a7d00);
   color: white;
 }
-
-h1 { margin: 10px; }
 
 #ground {
   position: relative;
@@ -30,16 +28,6 @@ h1 { margin: 10px; }
   background: #8b4513;
 }
 
-#stumps {
-  position: absolute;
-  bottom: 60px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 20px;
-  height: 40px;
-  background: white;
-}
-
 #ball {
   position: absolute;
   width: 14px;
@@ -47,6 +35,7 @@ h1 { margin: 10px; }
   background: red;
   border-radius: 50%;
   top: 0;
+  left: 50%;
 }
 
 #bat {
@@ -57,33 +46,25 @@ h1 { margin: 10px; }
   height: 10px;
   background: yellow;
   transform: translateX(-50%);
-  transition: transform 0.1s;
 }
 
-/* Simple batsman */
-#batsman {
-  position: absolute;
-  bottom: 30px;
-  left: 50%;
-  width: 10px;
-  height: 40px;
-  background: white;
-  transform: translateX(-50%);
+#powerBar {
+  width: 200px;
+  height: 10px;
+  background: #333;
+  margin: 10px auto;
+  position: relative;
 }
 
-/* Simple bowler */
-#bowler {
+#power {
+  width: 20px;
+  height: 100%;
+  background: yellow;
   position: absolute;
-  top: 10px;
-  left: 50%;
-  width: 10px;
-  height: 40px;
-  background: orange;
-  transform: translateX(-50%);
+  left: 0;
 }
 
 button {
-  margin-top: 10px;
   padding: 15px 30px;
   font-size: 18px;
   background: red;
@@ -92,158 +73,104 @@ button {
   border-radius: 10px;
 }
 
-#result {
-  font-size: 20px;
-  margin-top: 5px;
-}
 </style>
 </head>
 
 <body>
 
-<h1>🏏 Tap Cricket V9</h1>
-<div id="target"></div>
+<h2>🏏 Tap Cricket V10</h2>
 <div id="score">Score: 0</div>
-<div id="over">Over: 0.0</div>
-<div id="wickets">Wickets: 0</div>
 <div id="result"></div>
+
+<div id="powerBar"><div id="power"></div></div>
 
 <div id="ground">
   <div id="pitch"></div>
-  <div id="bowler"></div>
   <div id="ball"></div>
-  <div id="batsman"></div>
   <div id="bat"></div>
-  <div id="stumps"></div>
 </div>
 
-<button onclick="hit()">HIT</button>
+<button onclick="hit('left')">⬅ LEFT</button>
+<button onclick="hit('right')">RIGHT ➡</button>
 
 <script>
 let score = 0;
-let balls = 0;
-let wickets = 0;
-let totalBalls = 6;
-let target = Math.floor(Math.random() * 30) + 20;
-
-document.getElementById("target").innerText = "Target: " + target;
-
 let ballY = 0;
 let ballX = window.innerWidth / 2;
 let speed = 4;
-let swing = 0;
 let moving = true;
 
-function updateOver() {
-  let over = Math.floor(balls / 6);
-  let ball = balls % 6;
-  document.getElementById("over").innerText = "Over: " + over + "." + ball;
+let powerPos = 0;
+let powerDir = 1;
+
+function animatePower() {
+  powerPos += powerDir * 4;
+
+  if (powerPos > 180 || powerPos < 0) powerDir *= -1;
+
+  document.getElementById("power").style.left = powerPos + "px";
+
+  requestAnimationFrame(animatePower);
 }
 
 function resetBall() {
   ballY = 0;
   ballX = window.innerWidth / 2;
-  speed = 4 + Math.random() * 3;
-  swing = (Math.random() - 0.5) * 4; // left/right swing
+  speed = 4 + Math.random() * 2;
 }
 
 function animateBall() {
   if (!moving) return;
 
   ballY += speed;
-  ballX += swing;
-
   document.getElementById("ball").style.top = ballY + "px";
   document.getElementById("ball").style.left = ballX + "px";
 
   if (ballY > 320) {
-    bowlMiss();
+    document.getElementById("result").innerText = "Miss!";
+    resetBall();
   }
 
   requestAnimationFrame(animateBall);
 }
 
-function bowlMiss() {
-  balls++;
-  if (Math.random() < 0.4) {
-    wickets++;
-    showResult("❌ OUT!");
-  } else {
-    showResult("Miss!");
-  }
-  nextBall();
-}
-
-function hit() {
-  if (!moving) return;
-
+function hit(direction) {
   let timing = Math.abs(ballY - 300);
+
+  let power = powerPos / 180;
+
   let run = 0;
 
-  // bat swing animation
-  document.getElementById("bat").style.transform = "translateX(-50%) rotate(-25deg)";
-  setTimeout(() => {
-    document.getElementById("bat").style.transform = "translateX(-50%)";
-  }, 100);
-
-  if (timing < 10) {
-    run = 6;
-    showResult("🔥 SIX!");
-  } else if (timing < 25) {
-    run = 4;
-    showResult("💥 FOUR!");
-  } else if (timing < 50) {
-    run = 1;
-    showResult("👍 Single");
-  } else {
-    if (Math.random() < 0.5) {
-      wickets++;
-      showResult("❌ OUT!");
-    } else {
-      showResult("Miss!");
-    }
-  }
+  if (timing < 15 && power > 0.7) run = 6;
+  else if (timing < 30) run = 4;
+  else if (timing < 60) run = 1;
+  else run = 0;
 
   score += run;
-  balls++;
 
-  nextBall();
-}
-
-function nextBall() {
-  updateUI();
-  updateOver();
-
-  if (balls >= totalBalls || wickets >= 3) {
-    endGame();
-    return;
-  }
-
-  resetBall();
-}
-
-function updateUI() {
   document.getElementById("score").innerText = "Score: " + score;
-  document.getElementById("wickets").innerText = "Wickets: " + wickets;
-}
 
-function showResult(text) {
-  document.getElementById("result").innerText = text;
-}
+  if (run === 6) document.getElementById("result").innerText = "🔥 SIX!";
+  else if (run === 4) document.getElementById("result").innerText = "💥 FOUR!";
+  else if (run === 1) document.getElementById("result").innerText = "Single";
+  else document.getElementById("result").innerText = "❌ Miss!";
 
-function endGame() {
-  moving = false;
+  // BALL FLY ANIMATION
+  let flyX = direction === "left" ? ballX - 150 : ballX + 150;
+  let flyY = ballY - 200;
+
+  document.getElementById("ball").style.transition = "0.5s";
+  document.getElementById("ball").style.left = flyX + "px";
+  document.getElementById("ball").style.top = flyY + "px";
+
   setTimeout(() => {
-    if (score >= target) {
-      alert("🏆 YOU WON!\nScore: " + score);
-    } else {
-      alert("❌ YOU LOST!\nScore: " + score);
-    }
-  }, 200);
+    document.getElementById("ball").style.transition = "none";
+    resetBall();
+  }, 500);
 }
 
-resetBall();
 animateBall();
+animatePower();
 </script>
 
 </body>
