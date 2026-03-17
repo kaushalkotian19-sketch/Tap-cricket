@@ -2,152 +2,130 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tap Cricket V15</title>
+<title>Perfect Hit</title>
+
 <style>
 body {
   margin:0;
   font-family:Arial;
-  background:#0b2a4a;
-  color:white;
   text-align:center;
+  background:#0f172a;
+  color:white;
 }
 
-#scoreboard {
-  padding:10px;
-  background:#102f5c;
-  font-size:18px;
+h1 {
+  margin-top:20px;
 }
 
-canvas {
-  background:#3aa655;
-  display:block;
-  margin:auto;
-}
-
-.controls {
+#score {
+  font-size:20px;
   margin:10px;
 }
 
+#gameBox {
+  width:300px;
+  height:40px;
+  background:#1e293b;
+  margin:40px auto;
+  position:relative;
+  border-radius:10px;
+}
+
+.zone {
+  position:absolute;
+  height:100%;
+}
+
+#perfect {
+  background:#22c55e;
+  left:120px;
+  width:60px;
+}
+
+#good {
+  background:#eab308;
+  left:90px;
+  width:120px;
+  opacity:0.6;
+}
+
+#marker {
+  width:10px;
+  height:100%;
+  background:#ef4444;
+  position:absolute;
+  left:0;
+}
+
 button {
-  padding:12px 20px;
-  margin:5px;
-  font-size:16px;
+  padding:12px 25px;
+  font-size:18px;
+  background:#ef4444;
   border:none;
   border-radius:8px;
-  background:#ff3b3b;
   color:white;
+}
+
+#result {
+  margin-top:20px;
+  font-size:20px;
 }
 </style>
 </head>
 
 <body>
 
-<div id="scoreboard">
-🏏 Score: <span id="score">0</span> |
-Balls: <span id="balls">6</span> |
-Wickets: <span id="wickets">0</span>
-<br>
-<span id="result">Tap to play!</span>
+<h1>🎯 Perfect Hit</h1>
+<div id="score">Score: 0</div>
+
+<div id="gameBox">
+  <div id="good" class="zone"></div>
+  <div id="perfect" class="zone"></div>
+  <div id="marker"></div>
 </div>
 
-<canvas id="game" width="350" height="500"></canvas>
+<button onclick="hit()">HIT</button>
 
-<div class="controls">
-<button onclick="hit('left')">Leg Shot</button>
-<button onclick="hit('right')">Off Shot</button>
-</div>
+<div id="result">Tap at the right time!</div>
 
 <script>
-let canvas = document.getElementById("game");
-let ctx = canvas.getContext("2d");
-
-let ballY = 0;
-let ballX = 175;
-let speed = 4;
-
+let marker = document.getElementById("marker");
 let score = 0;
-let balls = 6;
-let wickets = 0;
+let speed = 3;
+let pos = 0;
+let direction = 1;
 
-let moving = true;
+function animate(){
+  pos += speed * direction;
 
-function drawPitch(){
-  ctx.fillStyle = "#c2a679";
-  ctx.fillRect(120, 0, 110, 500);
-}
-
-function drawBatsman(){
-  ctx.fillStyle = "blue";
-  ctx.fillRect(160, 400, 30, 60); // body
-  ctx.fillStyle = "black";
-  ctx.fillRect(170, 360, 10, 40); // bat
-}
-
-function drawBall(){
-  ctx.beginPath();
-  ctx.arc(ballX, ballY, 8, 0, Math.PI*2);
-  ctx.fillStyle = "red";
-  ctx.fill();
-}
-
-function update(){
-  ctx.clearRect(0,0,350,500);
-
-  drawPitch();
-  drawBatsman();
-  drawBall();
-
-  if(moving){
-    ballY += speed;
+  if(pos >= 290 || pos <= 0){
+    direction *= -1;
   }
 
-  if(ballY > 480){
-    nextBall();
-  }
-
-  requestAnimationFrame(update);
+  marker.style.left = pos + "px";
+  requestAnimationFrame(animate);
 }
 
-function hit(direction){
-  if(ballY < 350 || ballY > 430) return;
-
-  let run = 0;
-  let text = "";
-
-  if(Math.random() < 0.2){
-    wickets++;
-    text = "❌ OUT!";
-  } else {
-    if(direction === "left"){
-      run = [1,2,4,6][Math.floor(Math.random()*4)];
-    } else {
-      run = [1,2,4][Math.floor(Math.random()*3)];
-    }
-    score += run;
-    text = "🏏 " + run + " runs!";
+function hit(){
+  let resultText = "";
+  
+  if(pos >= 120 && pos <= 180){
+    score += 10;
+    resultText = "🔥 PERFECT!";
+  }
+  else if(pos >= 90 && pos <= 210){
+    score += 5;
+    resultText = "👍 GOOD!";
+  }
+  else{
+    resultText = "❌ MISS!";
   }
 
-  document.getElementById("score").innerText = score;
-  document.getElementById("wickets").innerText = wickets;
-  document.getElementById("result").innerText = text;
-
-  nextBall();
+  document.getElementById("score").innerText = "Score: " + score;
+  document.getElementById("result").innerText = resultText;
 }
 
-function nextBall(){
-  balls--;
-  document.getElementById("balls").innerText = balls;
-
-  if(balls <= 0){
-    alert("Game Over! Score: " + score);
-    return;
-  }
-
-  ballY = 0;
-  ballX = 120 + Math.random()*110;
-}
-
-update();
+animate();
 </script>
 
 </body>
