@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Perfect Hit</title>
+<title>Perfect Hit Arena</title>
 
 <style>
 body {
@@ -15,35 +15,19 @@ body {
 
 h1 { margin-top:20px; }
 
-#score, #timer, #highscore {
-  font-size:18px;
-  margin:5px;
-}
-
 #gameBox {
   width:300px;
   height:40px;
   background:#1e293b;
-  margin:30px auto;
+  margin:20px auto;
   position:relative;
   border-radius:10px;
 }
 
-.zone {
-  position:absolute;
-  height:100%;
-}
+.zone { position:absolute; height:100%; }
 
-#perfect {
-  background:#22c55e;
-  width:60px;
-}
-
-#good {
-  background:#eab308;
-  width:120px;
-  opacity:0.5;
-}
+#perfect { background:#22c55e; width:60px; }
+#good { background:#eab308; width:120px; opacity:0.5; }
 
 #marker {
   width:10px;
@@ -55,31 +39,25 @@ h1 { margin-top:20px; }
 
 button {
   padding:10px 20px;
-  font-size:16px;
-  background:#ef4444;
+  margin:5px;
   border:none;
   border-radius:8px;
+  background:#ef4444;
   color:white;
-  margin:5px;
 }
 
-#result {
-  margin-top:15px;
-  font-size:18px;
-}
-
-#leaderboard {
-  margin-top:20px;
-}
+#leaderboard { margin-top:20px; }
 </style>
 </head>
 
 <body>
 
-<h1>🎯 Perfect Hit</h1>
+<h1>🎯 Perfect Hit Arena</h1>
 
-<div id="score">Score: 0</div>
-<div id="timer">Time: 10s</div>
+<div>💰 Balance: <span id="balance">500</span> ION</div>
+<div>👤 Turn: <span id="playerTurn">Player 1</span></div>
+<div>Score: <span id="score">0</span></div>
+<div>Time: <span id="timer">10</span>s</div>
 
 <div id="gameBox">
   <div id="good" class="zone"></div>
@@ -87,15 +65,17 @@ button {
   <div id="marker"></div>
 </div>
 
+<button onclick="startGame()">Enter (100 ION)</button>
 <button onclick="hit()">HIT</button>
-<button onclick="restartGame()">Restart</button>
 
-<div id="result">Tap at the right time!</div>
+<div id="result"></div>
 
 <div id="leaderboard">
-<h3>🏆 Top Scores</h3>
-<div id="scores"></div>
+<h3>🏆 Match Result</h3>
+<div id="winner"></div>
 </div>
+
+<audio id="bgm" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
 
 <script>
 let marker = document.getElementById("marker");
@@ -103,31 +83,22 @@ let perfect = document.getElementById("perfect");
 let good = document.getElementById("good");
 
 let score = 0;
-let combo = 0;
 let timeLeft = 10;
-
 let speed = 4;
 let pos = 0;
 let direction = 1;
-let gameActive = true;
+let gameActive = false;
 
 let zonePos = 120;
 
-// leaderboard
-let scores = JSON.parse(localStorage.getItem("scores")) || [];
+let balance = 500;
 
-function updateLeaderboard(){
-  let html = "";
-  scores.sort((a,b)=>b-a).slice(0,5).forEach(s=>{
-    html += "<div>" + s + "</div>";
-  });
-  document.getElementById("scores").innerHTML = html;
-}
-
-updateLeaderboard();
+let player = 1;
+let p1Score = 0;
+let p2Score = 0;
 
 // sound
-function playSound(freq){
+function beep(freq){
   let ctx = new (window.AudioContext || window.webkitAudioContext)();
   let osc = ctx.createOscillator();
   osc.frequency.value = freq;
@@ -136,7 +107,28 @@ function playSound(freq){
   setTimeout(()=>osc.stop(),100);
 }
 
-// animate marker + difficulty
+// start game (entry)
+function startGame(){
+  if(balance < 100){
+    alert("Not enough ION!");
+    return;
+  }
+
+  balance -= 100;
+  document.getElementById("balance").innerText = balance;
+
+  score = 0;
+  timeLeft = 10;
+  gameActive = true;
+
+  document.getElementById("result").innerText = "Game Started!";
+  document.getElementById("bgm").play();
+
+  animate();
+  startTimer();
+}
+
+// animate
 function animate(){
   if(!gameActive) return;
 
@@ -148,7 +140,6 @@ function animate(){
 
   marker.style.left = pos + "px";
 
-  // move zones slowly
   zonePos += 1;
   if(zonePos > 200) zonePos = 80;
 
@@ -158,80 +149,78 @@ function animate(){
   requestAnimationFrame(animate);
 }
 
-// hit logic
+// hit
 function hit(){
   if(!gameActive) return;
 
-  let resultText = "";
-
   if(pos >= zonePos && pos <= zonePos+60){
-    combo++;
-    score += 10 + combo;
-    resultText = "🔥 PERFECT x" + combo;
-    playSound(600);
-    speed += 0.2;
+    score += 10;
+    beep(600);
   }
   else if(pos >= zonePos-30 && pos <= zonePos+90){
-    combo = 0;
     score += 5;
-    resultText = "👍 GOOD!";
-    playSound(400);
+    beep(400);
   }
   else{
-    combo = 0;
-    resultText = "❌ MISS!";
-    playSound(200);
+    beep(200);
   }
 
-  document.getElementById("score").innerText = "Score: " + score;
-  document.getElementById("result").innerText = resultText;
+  document.getElementById("score").innerText = score;
 }
 
 // timer
 function startTimer(){
-  let timer = setInterval(() => {
-
+  let t = setInterval(()=>{
     if(!gameActive){
-      clearInterval(timer);
+      clearInterval(t);
       return;
     }
 
     timeLeft--;
-    document.getElementById("timer").innerText = "Time: " + timeLeft + "s";
+    document.getElementById("timer").innerText = timeLeft;
 
     if(timeLeft <= 0){
-      gameActive = false;
-      clearInterval(timer);
-
-      scores.push(score);
-      localStorage.setItem("scores", JSON.stringify(scores));
-      updateLeaderboard();
-
-      document.getElementById("result").innerText = "🏁 GAME OVER!";
-      alert("Final Score: " + score);
+      clearInterval(t);
+      endTurn();
     }
 
-  }, 1000);
+  },1000);
 }
 
-// restart
-function restartGame(){
-  score = 0;
-  combo = 0;
-  timeLeft = 10;
-  speed = 4;
-  gameActive = true;
+// turn system
+function endTurn(){
+  gameActive = false;
 
-  document.getElementById("score").innerText = "Score: 0";
-  document.getElementById("timer").innerText = "Time: 10s";
-  document.getElementById("result").innerText = "Tap at the right time!";
-
-  animate();
-  startTimer();
+  if(player === 1){
+    p1Score = score;
+    player = 2;
+    document.getElementById("playerTurn").innerText = "Player 2";
+    document.getElementById("result").innerText = "Player 2 Turn!";
+  } else {
+    p2Score = score;
+    decideWinner();
+  }
 }
 
-animate();
-startTimer();
+// winner
+function decideWinner(){
+  let winner = "";
+
+  if(p1Score > p2Score){
+    winner = "🏆 Player 1 Wins!";
+    balance += 200;
+  } else if(p2Score > p1Score){
+    winner = "🏆 Player 2 Wins!";
+    balance += 200;
+  } else {
+    winner = "🤝 Draw!";
+    balance += 100;
+  }
+
+  document.getElementById("winner").innerText = winner;
+  document.getElementById("balance").innerText = balance;
+  document.getElementById("bgm").pause();
+}
 </script>
 
 </body>
