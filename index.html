@@ -2,24 +2,22 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tap Cricket V7</title>
+<title>Tap Cricket V8</title>
 
 <style>
 body {
   margin: 0;
   text-align: center;
-  background: #001a33;
-  color: white;
   font-family: Arial;
+  background: linear-gradient(#87CEEB, #0a7d00);
+  color: white;
 }
 
-h1 { margin-top: 10px; }
+h1 { margin: 10px; }
 
 #ground {
   position: relative;
-  width: 100%;
-  height: 300px;
-  background: linear-gradient(#0a7d00, #055a00);
+  height: 350px;
   overflow: hidden;
 }
 
@@ -27,9 +25,19 @@ h1 { margin-top: 10px; }
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  width: 80px;
+  width: 90px;
   height: 100%;
   background: #8b4513;
+}
+
+#stumps {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 40px;
+  background: white;
 }
 
 #ball {
@@ -45,16 +53,16 @@ h1 { margin-top: 10px; }
 
 #bat {
   position: absolute;
-  bottom: 10px;
+  bottom: 20px;
   left: 50%;
-  transform: translateX(-50%);
-  width: 60px;
+  width: 70px;
   height: 10px;
   background: yellow;
+  transform: translateX(-50%);
 }
 
 button {
-  margin-top: 20px;
+  margin-top: 10px;
   padding: 15px 30px;
   font-size: 18px;
   background: red;
@@ -64,21 +72,24 @@ button {
 }
 
 #result {
-  margin-top: 10px;
   font-size: 20px;
+  margin-top: 5px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>🏏 Tap Cricket V7</h1>
+<h1>🏏 Tap Cricket V8</h1>
+<div id="target"></div>
 <div id="score">Score: 0</div>
 <div id="balls">Balls: 6</div>
+<div id="wickets">Wickets: 0</div>
 <div id="result"></div>
 
 <div id="ground">
   <div id="pitch"></div>
+  <div id="stumps"></div>
   <div id="ball"></div>
   <div id="bat"></div>
 </div>
@@ -88,9 +99,21 @@ button {
 <script>
 let score = 0;
 let balls = 6;
+let wickets = 0;
+let target = Math.floor(Math.random() * 30) + 20;
+
+document.getElementById("target").innerText = "Target: " + target;
+
 let ballY = 0;
 let speed = 3;
 let moving = true;
+
+function playSound(type) {
+  let audio = new Audio();
+  if (type === "hit") audio.src = "https://www.soundjay.com/button/beep-07.wav";
+  if (type === "out") audio.src = "https://www.soundjay.com/button/beep-10.wav";
+  audio.play();
+}
 
 function resetBall() {
   ballY = 0;
@@ -103,21 +126,21 @@ function animateBall() {
   ballY += speed;
   document.getElementById("ball").style.top = ballY + "px";
 
-  if (ballY > 260) {
-    // missed ball
+  if (ballY > 300) {
+    // missed
     balls--;
-    document.getElementById("balls").innerText = "Balls: " + balls;
-    document.getElementById("result").innerText = "❌ Miss!";
+    if (Math.random() < 0.4) {
+      wickets++;
+      document.getElementById("result").innerText = "❌ OUT!";
+      playSound("out");
+    } else {
+      document.getElementById("result").innerText = "Miss!";
+    }
+    updateUI();
     resetBall();
   }
 
-  if (balls <= 0) {
-    moving = false;
-    setTimeout(() => {
-      alert("Game Over!\nScore: " + score);
-    }, 200);
-    return;
-  }
+  if (balls <= 0 || wickets >= 3) endGame();
 
   requestAnimationFrame(animateBall);
 }
@@ -125,8 +148,7 @@ function animateBall() {
 function hit() {
   if (!moving || balls <= 0) return;
 
-  let timing = Math.abs(ballY - 240);
-
+  let timing = Math.abs(ballY - 280);
   let run = 0;
   let text = "";
 
@@ -141,20 +163,44 @@ function hit() {
     text = "👍 Single";
   } else {
     run = 0;
-    text = "❌ Miss!";
+    text = "Miss!";
+  }
+
+  if (run === 0 && Math.random() < 0.3) {
+    wickets++;
+    text = "❌ OUT!";
+    playSound("out");
+  } else if (run > 0) {
+    playSound("hit");
   }
 
   score += run;
   balls--;
 
-  document.getElementById("score").innerText = "Score: " + score;
-  document.getElementById("balls").innerText = "Balls: " + balls;
   document.getElementById("result").innerText = text;
-
+  updateUI();
   resetBall();
+
+  if (balls <= 0 || wickets >= 3) endGame();
 }
 
-// start animation
+function updateUI() {
+  document.getElementById("score").innerText = "Score: " + score;
+  document.getElementById("balls").innerText = "Balls: " + balls;
+  document.getElementById("wickets").innerText = "Wickets: " + wickets;
+}
+
+function endGame() {
+  moving = false;
+  setTimeout(() => {
+    if (score >= target) {
+      alert("🏆 YOU WON!\nScore: " + score);
+    } else {
+      alert("❌ YOU LOST!\nScore: " + score);
+    }
+  }, 200);
+}
+
 animateBall();
 </script>
 
