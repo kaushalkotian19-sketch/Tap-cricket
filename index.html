@@ -1,221 +1,161 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Tap Cricket V7</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tap Cricket V7</title>
+
+<style>
+body {
+  margin: 0;
+  text-align: center;
+  background: #001a33;
+  color: white;
+  font-family: Arial;
+}
+
+h1 { margin-top: 10px; }
+
+#ground {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  background: linear-gradient(#0a7d00, #055a00);
+  overflow: hidden;
+}
+
+#pitch {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 100%;
+  background: #8b4513;
+}
+
+#ball {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  background: red;
+  border-radius: 50%;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+#bat {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 10px;
+  background: yellow;
+}
+
+button {
+  margin-top: 20px;
+  padding: 15px 30px;
+  font-size: 18px;
+  background: red;
+  color: white;
+  border: none;
+  border-radius: 10px;
+}
+
+#result {
+  margin-top: 10px;
+  font-size: 20px;
+}
+</style>
 </head>
 
-<body style="margin:0; text-align:center; font-family:sans-serif; background:#1e293b; color:white;">
+<body>
 
-<h2>🏏 Tap Cricket Match</h2>
+<h1>🏏 Tap Cricket V7</h1>
+<div id="score">Score: 0</div>
+<div id="balls">Balls: 6</div>
+<div id="result"></div>
 
-<div id="menu">
-  <h3>Select Overs</h3>
-  <button onclick="startMatch(2)">2</button>
-  <button onclick="startMatch(5)">5</button>
-  <button onclick="startMatch(10)">10</button>
-  <button onclick="startMatch(20)">20</button>
+<div id="ground">
+  <div id="pitch"></div>
+  <div id="ball"></div>
+  <div id="bat"></div>
 </div>
 
-<h3 id="info"></h3>
-<h2 id="score"></h2>
-<h3 id="result"></h3>
-
-<!-- Ground -->
-<div style="position:relative; height:400px; background:green; overflow:hidden;">
-
-  <!-- Pitch -->
-  <div style="
-    position:absolute;
-    left:45%;
-    width:10%;
-    height:100%;
-    background:#d2b48c;
-  "></div>
-
-  <!-- Ball -->
-  <div id="ball" style="
-    position:absolute;
-    width:15px;
-    height:15px;
-    background:red;
-    border-radius:50%;
-    top:0;
-    left:50%;
-  "></div>
-
-  <!-- Bat -->
-  <div id="bat" style="
-    position:absolute;
-    bottom:40px;
-    left:47%;
-    width:60px;
-    height:8px;
-    background:orange;
-    transform-origin:left;
-  "></div>
-
-</div>
-
-<button onclick="hit()" id="hitBtn" style="padding:15px; font-size:18px; display:none;">
-HIT
-</button>
+<button onclick="hit()">HIT</button>
 
 <script>
 let score = 0;
-let ballsLeft = 0;
-let wickets = 0;
-let totalBalls = 0;
-let target = 0;
-let innings = 1;
-
+let balls = 6;
 let ballY = 0;
-let speed = 4;
-let interval;
+let speed = 3;
+let moving = true;
 
-function startMatch(overs) {
-  totalBalls = overs * 6;
-  ballsLeft = totalBalls;
-  wickets = 0;
-  score = 0;
-  innings = 1;
-
-  document.getElementById("menu").style.display = "none";
-  document.getElementById("hitBtn").style.display = "inline";
-
-  updateInfo("Batting - Set target");
-  startBall();
+function resetBall() {
+  ballY = 0;
+  speed = 3 + Math.random() * 3;
 }
 
-function startBall() {
-  ballY = 0;
-  speed = 3 + Math.random()*3;
+function animateBall() {
+  if (!moving) return;
 
-  let ball = document.getElementById("ball");
-  ball.style.top = "0px";
+  ballY += speed;
+  document.getElementById("ball").style.top = ballY + "px";
 
-  interval = setInterval(() => {
-    ballY += speed;
-    ball.style.top = ballY + "px";
+  if (ballY > 260) {
+    // missed ball
+    balls--;
+    document.getElementById("balls").innerText = "Balls: " + balls;
+    document.getElementById("result").innerText = "❌ Miss!";
+    resetBall();
+  }
 
-    if (ballY > 320) {
-      clearInterval(interval);
-      out();
-    }
-  }, 20);
+  if (balls <= 0) {
+    moving = false;
+    setTimeout(() => {
+      alert("Game Over!\nScore: " + score);
+    }, 200);
+    return;
+  }
+
+  requestAnimationFrame(animateBall);
 }
 
 function hit() {
-  if (ballsLeft <= 0 || wickets >= 3) return;
+  if (!moving || balls <= 0) return;
 
-  clearInterval(interval);
-
-  let bat = document.getElementById("bat");
-  bat.style.transform = "rotate(-60deg)";
-  setTimeout(() => bat.style.transform = "rotate(0deg)", 200);
+  let timing = Math.abs(ballY - 240);
 
   let run = 0;
   let text = "";
 
-  if (ballY > 260 && ballY < 320) {
+  if (timing < 10) {
     run = 6;
     text = "🔥 SIX!";
-  } else if (ballY > 220) {
+  } else if (timing < 25) {
     run = 4;
-    text = "👍 FOUR!";
-  } else if (ballY > 180) {
+    text = "💥 FOUR!";
+  } else if (timing < 50) {
     run = 1;
-    text = "🙂 Single";
+    text = "👍 Single";
   } else {
-    return out();
+    run = 0;
+    text = "❌ Miss!";
   }
 
   score += run;
-  ballsLeft--;
+  balls--;
 
-  updateInfo(text);
+  document.getElementById("score").innerText = "Score: " + score;
+  document.getElementById("balls").innerText = "Balls: " + balls;
+  document.getElementById("result").innerText = text;
 
-  if (ballsLeft === 0 || wickets >= 3) {
-    nextInnings();
-  } else {
-    setTimeout(startBall, 600);
-  }
+  resetBall();
 }
 
-function out() {
-  wickets++;
-  ballsLeft--;
-
-  updateInfo("❌ OUT!");
-
-  if (ballsLeft === 0 || wickets >= 3) {
-    nextInnings();
-  } else {
-    setTimeout(startBall, 600);
-  }
-}
-
-function nextInnings() {
-  if (innings === 1) {
-    target = score + 1;
-    innings = 2;
-
-    ballsLeft = totalBalls;
-    wickets = 0;
-    score = 0;
-
-    document.getElementById("hitBtn").style.display = "none";
-
-    updateInfo("AI chasing: " + target);
-
-    setTimeout(aiPlay, 1000);
-  } else {
-    endMatch();
-  }
-}
-
-function aiPlay() {
-  let aiScore = 0;
-  let aiWickets = 0;
-  let balls = totalBalls;
-
-  let intervalAI = setInterval(() => {
-    if (balls <= 0 || aiWickets >= 3 || aiScore >= target) {
-      clearInterval(intervalAI);
-      showResult(aiScore);
-      return;
-    }
-
-    if (Math.random() < 0.2) {
-      aiWickets++;
-    } else {
-      aiScore += [1,2,4,6][Math.floor(Math.random()*4)];
-    }
-
-    balls--;
-
-    document.getElementById("result").innerText =
-      "AI: " + aiScore + "/" + aiWickets;
-
-  }, 500);
-}
-
-function showResult(aiScore) {
-  if (aiScore >= target) {
-    alert("😢 You Lost!");
-  } else {
-    alert("🎉 You Won!");
-  }
-}
-
-function updateInfo(msg) {
-  document.getElementById("info").innerText =
-    "Balls: " + ballsLeft + " | Wickets: " + wickets;
-
-  document.getElementById("score").innerText =
-    "Score: " + score;
-
-  document.getElementById("result").innerText = msg;
-}
+// start animation
+animateBall();
 </script>
 
 </body>
