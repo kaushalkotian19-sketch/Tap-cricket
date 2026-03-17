@@ -1,56 +1,91 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Tap Cricket</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-body {
-  text-align: center;
-  font-family: Arial;
-  background: #0f172a;
-  color: white;
-}
-h1 { margin-top: 20px; }
-#score { font-size: 30px; margin: 20px; }
-#ball {
-  width: 50px;
-  height: 50px;
-  background: red;
-  border-radius: 50%;
-  position: relative;
-  margin: auto;
-  top: 100px;
-}
-button {
-  padding: 15px 30px;
-  font-size: 18px;
-  background: gold;
-  border: none;
-  border-radius: 10px;
-}
-</style>
+  <title>Tap Cricket Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      text-align: center;
+      background: #0b1a2f;
+      color: white;
+      font-family: Arial;
+    }
+    #bar {
+      width: 300px;
+      height: 20px;
+      background: gray;
+      margin: 40px auto;
+      position: relative;
+    }
+    #target {
+      width: 60px;
+      height: 20px;
+      background: green;
+      position: absolute;
+      left: 120px;
+    }
+    #ball {
+      width: 20px;
+      height: 20px;
+      background: yellow;
+      position: absolute;
+      left: 0;
+    }
+    button {
+      margin-top: 30px;
+      padding: 15px 30px;
+      font-size: 18px;
+      background: red;
+      color: white;
+      border: none;
+    }
+  </style>
 </head>
 
 <body>
 
-<h1>🏏 Tap Cricket</h1>
-<div id="score">Score: 0</div>
-<div id="balls">Balls left: 6</div>
+<h1>🏏 Tap Cricket Pro</h1>
+<h2 id="score">Score: 0</h2>
+<p id="balls">Balls left: 6</p>
 
-<div id="ball"></div>
+<div id="bar">
+  <div id="target"></div>
+  <div id="ball"></div>
+</div>
 
-<br><br>
-<button onclick="hit()">HIT!</button>
+<button onclick="hit()">HIT</button>
 
 <script>
 let score = 0;
 let balls = 6;
+let pos = 0;
+let direction = 2;
+
+function moveBall() {
+  pos += direction;
+  if (pos > 280 || pos < 0) direction *= -1;
+  document.getElementById("ball").style.left = pos + "px";
+}
+setInterval(moveBall, 20);
 
 function hit() {
   if (balls <= 0) return;
 
-  let runs = Math.floor(Math.random() * 7); // 0 to 6
-  score += runs;
+  let ballPos = pos;
+  let targetStart = 120;
+  let targetEnd = 180;
+
+  let run = 0;
+
+  if (ballPos >= targetStart && ballPos <= targetEnd) {
+    run = 6; // perfect hit
+  } else if (ballPos >= 90 && ballPos <= 210) {
+    run = 2; // decent
+  } else {
+    run = 0; // miss
+  }
+
+  score += run;
   balls--;
 
   document.getElementById("score").innerText = "Score: " + score;
@@ -58,12 +93,8 @@ function hit() {
 
   if (balls === 0) {
     setTimeout(() => {
-      alert("Game Over! Your Score: " + score);
-      score = 0;
-      balls = 6;
-      document.getElementById("score").innerText = "Score: 0";
-      document.getElementById("balls").innerText = "Balls left: 6";
-    }, 300);
+      alert("Game Over! Score: " + score);
+    }, 100);
   }
 }
 </script>
