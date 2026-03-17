@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Tap Cricket Pro v3</title>
+  <title>Tap Cricket Pro v4</title>
 </head>
 
-<body style="background:#0b1a2f; color:white; text-align:center; font-family:sans-serif;">
+<body style="background:#0b1a2f; color:white; text-align:center; font-family:sans-serif; overflow:hidden;">
 
 <h1>🏏 Tap Cricket Pro</h1>
 
@@ -12,7 +12,7 @@
 <h3 id="balls">Balls left: 6</h3>
 <h3 id="result"></h3>
 
-<div style="position:relative; height:350px; margin-top:20px;">
+<div style="position:relative; height:400px; margin-top:20px;">
 
   <!-- Ball -->
   <div id="ball" style="
@@ -25,32 +25,49 @@
     left:50%;
   "></div>
 
-  <!-- Moving Hit Zone -->
-  <div id="zone" style="
+  <!-- Player -->
+  <div style="
     position:absolute;
     bottom:40px;
-    width:80px;
-    height:15px;
-    background:yellow;
-    left:40%;
+    left:48%;
+    width:10px;
+    height:40px;
+    background:white;
   "></div>
 
   <!-- Bat -->
   <div id="bat" style="
     position:absolute;
-    bottom:20px;
-    left:45%;
+    bottom:40px;
+    left:48%;
     width:60px;
-    height:10px;
+    height:6px;
     background:orange;
     transform-origin:left;
   "></div>
 
+  <!-- Power meter -->
+  <div style="
+    position:absolute;
+    bottom:10px;
+    left:20%;
+    width:60%;
+    height:10px;
+    background:#222;
+  ">
+    <div id="power" style="
+      width:10%;
+      height:100%;
+      background:yellow;
+    "></div>
+  </div>
+
 </div>
 
-<button onclick="hit()" style="padding:15px; font-size:18px; margin-top:20px;">
-  HIT
-</button>
+<button onclick="hit()" style="padding:15px; font-size:18px;">HIT</button>
+
+<audio id="hitSound" src="https://www.soundjay.com/button/button-3.mp3"></audio>
+<audio id="missSound" src="https://www.soundjay.com/button/button-10.mp3"></audio>
 
 <script>
 let score = 0;
@@ -59,15 +76,15 @@ let ballY = 0;
 let ballX = 50;
 let speed = 3;
 let interval;
-let zoneX = 40;
-let zoneDir = 1;
+let power = 10;
+let powerDir = 1;
 
-// Move hit zone left-right
+// Power meter animation
 setInterval(() => {
-  zoneX += zoneDir * 2;
-  if (zoneX > 70 || zoneX < 10) zoneDir *= -1;
-  document.getElementById("zone").style.left = zoneX + "%";
-}, 30);
+  power += powerDir * 2;
+  if (power > 100 || power < 10) powerDir *= -1;
+  document.getElementById("power").style.width = power + "%";
+}, 40);
 
 // Start ball
 function startBall() {
@@ -95,31 +112,40 @@ function hit() {
 
   clearInterval(interval);
 
-  // Bat swing animation
   let bat = document.getElementById("bat");
-  bat.style.transform = "rotate(-45deg)";
+  bat.style.transform = "rotate(-60deg)";
   setTimeout(() => {
     bat.style.transform = "rotate(0deg)";
   }, 200);
 
-  let zoneLeft = zoneX;
-  let zoneRight = zoneX + 10;
-
   let run = 0;
   let text = "";
 
-  // Check position match
+  // Timing + power logic
   if (ballY > 230 && ballY < 300) {
-    if (ballX >= zoneLeft && ballX <= zoneRight) {
+    if (power > 80) {
       run = 6;
-      text = "🔥 PERFECT SIX!";
-    } else if (Math.abs(ballX - zoneLeft) < 10) {
+      text = "🔥 SIX!";
+      flash();
+    } else if (power > 50) {
       run = 4;
       text = "👍 FOUR!";
     } else {
       run = 1;
-      text = "🙂 EDGE";
+      text = "🙂 Single";
     }
+
+    // Ball goes up animation
+    let ball = document.getElementById("ball");
+    let up = 300;
+    let anim = setInterval(() => {
+      up -= 10;
+      ball.style.top = up + "px";
+      if (up < 50) clearInterval(anim);
+    }, 20);
+
+    document.getElementById("hitSound").play();
+
   } else {
     return out();
   }
@@ -130,7 +156,7 @@ function hit() {
   update(text);
 
   if (balls > 0) {
-    setTimeout(startBall, 700);
+    setTimeout(startBall, 800);
   } else {
     endGame();
   }
@@ -139,12 +165,20 @@ function hit() {
 function out() {
   balls--;
   update("❌ OUT!");
+  document.getElementById("missSound").play();
 
   if (balls > 0) {
-    setTimeout(startBall, 700);
+    setTimeout(startBall, 800);
   } else {
     endGame();
   }
+}
+
+function flash() {
+  document.body.style.background = "#333";
+  setTimeout(() => {
+    document.body.style.background = "#0b1a2f";
+  }, 100);
 }
 
 function update(text) {
@@ -159,7 +193,6 @@ function endGame() {
   }, 200);
 }
 
-// Start game
 startBall();
 </script>
 
