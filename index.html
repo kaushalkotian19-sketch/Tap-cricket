@@ -2,20 +2,29 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tap Cricket V11</title>
+<title>Tap Cricket V12</title>
 
 <style>
 body {
   margin: 0;
-  text-align: center;
-  background: #0a7d00;
-  color: white;
+  background: #0b3d2e;
   font-family: Arial;
+  color: white;
+  text-align: center;
+}
+
+#ui {
+  background: #111;
+  padding: 10px;
+  font-size: 14px;
 }
 
 canvas {
-  background: linear-gradient(#6ec6ff, #0a7d00);
+  display: block;
+  margin: auto;
+  background: #2e7d32;
 }
+
 button {
   margin: 10px;
   padding: 12px 25px;
@@ -26,49 +35,71 @@ button {
 
 <body>
 
-<h2>🏏 Tap Cricket V11</h2>
-<div id="score">Score: 0</div>
-<div id="result"></div>
+<div id="ui">
+  🏏 Tap Cricket V12 | Score: <span id="score">0</span>
+  | Result: <span id="result">-</span>
+</div>
 
-<canvas id="game" width="350" height="500"></canvas><br>
+<canvas id="game" width="360" height="520"></canvas>
 
-<button onclick="hit(-1)">⬅ Off Side</button>
-<button onclick="hit(1)">Leg Side ➡</button>
+<button onclick="hit(-1)">⬅ Shot</button>
+<button onclick="hit(1)">Shot ➡</button>
 
 <script>
 let canvas = document.getElementById("game");
 let ctx = canvas.getContext("2d");
 
-let ball = { x: 175, y: 50, vx: 0, vy: 4, hit: false };
+let ball = { x: 180, y: 60, vx: 0, vy: 4, hit: false };
 let score = 0;
 
-function drawGround() {
+function drawField() {
+  // striped grass
+  for (let i = 0; i < 6; i++) {
+    ctx.fillStyle = i % 2 ? "#2e7d32" : "#388e3c";
+    ctx.fillRect(0, i * 100, 360, 100);
+  }
+
   // pitch
-  ctx.fillStyle = "#8b4513";
-  ctx.fillRect(140, 0, 70, 500);
+  ctx.fillStyle = "#c2a679";
+  ctx.fillRect(130, 0, 100, 520);
+
+  // crease
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(120, 420);
+  ctx.lineTo(240, 420);
+  ctx.stroke();
 
   // stumps
   ctx.fillStyle = "white";
-  ctx.fillRect(165, 420, 5, 30);
-  ctx.fillRect(175, 420, 5, 30);
-  ctx.fillRect(185, 420, 5, 30);
+  ctx.fillRect(170, 390, 5, 30);
+  ctx.fillRect(180, 390, 5, 30);
+  ctx.fillRect(190, 390, 5, 30);
 }
 
 function drawPlayers() {
-  // batsman
-  ctx.fillStyle = "blue";
-  ctx.fillRect(160, 400, 20, 40);
+  // batsman (better shape)
+  ctx.fillStyle = "#0d47a1";
+  ctx.fillRect(165, 360, 30, 60);
 
   // bat
-  ctx.fillStyle = "yellow";
-  ctx.fillRect(140, 420, 50, 5);
+  ctx.fillStyle = "#d7a86e";
+  ctx.fillRect(150, 380, 70, 6);
 
   // bowler
-  ctx.fillStyle = "orange";
-  ctx.fillRect(160, 20, 20, 40);
+  ctx.fillStyle = "#f9a825";
+  ctx.fillRect(165, 40, 30, 60);
 }
 
 function drawBall() {
+  // shadow
+  ctx.beginPath();
+  ctx.arc(ball.x, 440, 8, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(0,0,0,0.2)";
+  ctx.fill();
+
+  // ball
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, 6, 0, Math.PI * 2);
   ctx.fillStyle = "red";
@@ -79,48 +110,49 @@ function updateBall() {
   ball.y += ball.vy;
   ball.x += ball.vx;
 
-  // bounce / miss
-  if (ball.y > 430 && !ball.hit) {
-    document.getElementById("result").innerText = "Miss!";
+  if (ball.y > 420 && !ball.hit) {
+    setResult("Miss!");
     resetBall();
   }
 
-  // after hit → ball goes up
   if (ball.hit) {
-    ball.vy -= 0.3; // gravity effect
+    ball.vy -= 0.3;
   }
 
-  // reset if ball goes out
-  if (ball.y < 0) {
-    resetBall();
-  }
+  if (ball.y < 0) resetBall();
 }
 
-function hit(direction) {
+function hit(dir) {
   let timing = Math.abs(ball.y - 420);
 
   if (timing < 25) {
     ball.hit = true;
-    ball.vx = direction * (2 + Math.random() * 2);
-    ball.vy = -6;
+    ball.vx = dir * (3 + Math.random() * 2);
+    ball.vy = -7;
 
-    score += timing < 10 ? 6 : 4;
+    let run = timing < 10 ? 6 : 4;
+    score += run;
 
-    document.getElementById("score").innerText = "Score: " + score;
-    document.getElementById("result").innerText = timing < 10 ? "🔥 SIX!" : "💥 FOUR!";
+    setResult(run === 6 ? "🔥 SIX!" : "💥 FOUR!");
   } else {
-    document.getElementById("result").innerText = "❌ Miss!";
+    setResult("❌ Miss!");
   }
+
+  document.getElementById("score").innerText = score;
+}
+
+function setResult(text) {
+  document.getElementById("result").innerText = text;
 }
 
 function resetBall() {
-  ball = { x: 175, y: 50, vx: 0, vy: 4, hit: false };
+  ball = { x: 180, y: 60, vx: 0, vy: 4, hit: false };
 }
 
 function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  drawGround();
+  drawField();
   drawPlayers();
   drawBall();
   updateBall();
