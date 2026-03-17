@@ -1,24 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Tap Cricket V6</title>
+  <title>Tap Cricket V7</title>
 </head>
 
-<body style="background:#0b1a2f; color:white; text-align:center; font-family:sans-serif;">
+<body style="margin:0; text-align:center; font-family:sans-serif; background:#1e293b; color:white;">
 
-<h1>🏏 Tap Cricket V6</h1>
+<h2>🏏 Tap Cricket Match</h2>
 
-<h2 id="score">Score: 0</h2>
-<h3 id="balls">Balls: 6</h3>
+<div id="menu">
+  <h3>Select Overs</h3>
+  <button onclick="startMatch(2)">2</button>
+  <button onclick="startMatch(5)">5</button>
+  <button onclick="startMatch(10)">10</button>
+  <button onclick="startMatch(20)">20</button>
+</div>
+
+<h3 id="info"></h3>
+<h2 id="score"></h2>
 <h3 id="result"></h3>
 
-<div style="position:relative; height:400px; overflow:hidden;">
+<!-- Ground -->
+<div style="position:relative; height:400px; background:green; overflow:hidden;">
+
+  <!-- Pitch -->
+  <div style="
+    position:absolute;
+    left:45%;
+    width:10%;
+    height:100%;
+    background:#d2b48c;
+  "></div>
 
   <!-- Ball -->
   <div id="ball" style="
     position:absolute;
-    width:18px;
-    height:18px;
+    width:15px;
+    height:15px;
     background:red;
     border-radius:50%;
     top:0;
@@ -29,8 +47,8 @@
   <div id="bat" style="
     position:absolute;
     bottom:40px;
-    left:45%;
-    width:70px;
+    left:47%;
+    width:60px;
     height:8px;
     background:orange;
     transform-origin:left;
@@ -38,14 +56,35 @@
 
 </div>
 
-<button onclick="hit()" style="padding:15px; font-size:18px;">HIT</button>
+<button onclick="hit()" id="hitBtn" style="padding:15px; font-size:18px; display:none;">
+HIT
+</button>
 
 <script>
 let score = 0;
-let balls = 6;
+let ballsLeft = 0;
+let wickets = 0;
+let totalBalls = 0;
+let target = 0;
+let innings = 1;
+
 let ballY = 0;
 let speed = 4;
 let interval;
+
+function startMatch(overs) {
+  totalBalls = overs * 6;
+  ballsLeft = totalBalls;
+  wickets = 0;
+  score = 0;
+  innings = 1;
+
+  document.getElementById("menu").style.display = "none";
+  document.getElementById("hitBtn").style.display = "inline";
+
+  updateInfo("Batting - Set target");
+  startBall();
+}
 
 function startBall() {
   ballY = 0;
@@ -66,88 +105,117 @@ function startBall() {
 }
 
 function hit() {
-  if (balls <= 0) return;
+  if (ballsLeft <= 0 || wickets >= 3) return;
 
   clearInterval(interval);
 
-  // Bat animation
   let bat = document.getElementById("bat");
   bat.style.transform = "rotate(-60deg)";
-  setTimeout(() => {
-    bat.style.transform = "rotate(0deg)";
-  }, 200);
+  setTimeout(() => bat.style.transform = "rotate(0deg)", 200);
 
   let run = 0;
   let text = "";
 
-  // TIMING ZONES
   if (ballY > 260 && ballY < 320) {
     run = 6;
     text = "🔥 SIX!";
-    flyBall();
-  }
-  else if (ballY > 220 && ballY <= 260) {
+  } else if (ballY > 220) {
     run = 4;
     text = "👍 FOUR!";
-    flyBall();
-  }
-  else if (ballY > 180 && ballY <= 220) {
+  } else if (ballY > 180) {
     run = 1;
-    text = "🙂 SINGLE";
-  }
-  else {
+    text = "🙂 Single";
+  } else {
     return out();
   }
 
   score += run;
-  balls--;
+  ballsLeft--;
 
-  update(text);
+  updateInfo(text);
 
-  if (balls > 0) {
-    setTimeout(startBall, 700);
+  if (ballsLeft === 0 || wickets >= 3) {
+    nextInnings();
   } else {
-    endGame();
+    setTimeout(startBall, 600);
   }
-}
-
-function flyBall() {
-  let ball = document.getElementById("ball");
-  let up = ballY;
-
-  let anim = setInterval(() => {
-    up -= 10;
-    ball.style.top = up + "px";
-
-    if (up < 50) clearInterval(anim);
-  }, 20);
 }
 
 function out() {
-  balls--;
-  update("❌ OUT!");
+  wickets++;
+  ballsLeft--;
 
-  if (balls > 0) {
-    setTimeout(startBall, 700);
+  updateInfo("❌ OUT!");
+
+  if (ballsLeft === 0 || wickets >= 3) {
+    nextInnings();
   } else {
-    endGame();
+    setTimeout(startBall, 600);
   }
 }
 
-function update(text) {
-  document.getElementById("score").innerText = "Score: " + score;
-  document.getElementById("balls").innerText = "Balls: " + balls;
-  document.getElementById("result").innerText = text;
+function nextInnings() {
+  if (innings === 1) {
+    target = score + 1;
+    innings = 2;
+
+    ballsLeft = totalBalls;
+    wickets = 0;
+    score = 0;
+
+    document.getElementById("hitBtn").style.display = "none";
+
+    updateInfo("AI chasing: " + target);
+
+    setTimeout(aiPlay, 1000);
+  } else {
+    endMatch();
+  }
 }
 
-function endGame() {
-  setTimeout(() => {
-    alert("🏏 Game Over!\nScore: " + score);
-  }, 200);
+function aiPlay() {
+  let aiScore = 0;
+  let aiWickets = 0;
+  let balls = totalBalls;
+
+  let intervalAI = setInterval(() => {
+    if (balls <= 0 || aiWickets >= 3 || aiScore >= target) {
+      clearInterval(intervalAI);
+      showResult(aiScore);
+      return;
+    }
+
+    if (Math.random() < 0.2) {
+      aiWickets++;
+    } else {
+      aiScore += [1,2,4,6][Math.floor(Math.random()*4)];
+    }
+
+    balls--;
+
+    document.getElementById("result").innerText =
+      "AI: " + aiScore + "/" + aiWickets;
+
+  }, 500);
 }
 
-// start game
-startBall();
+function showResult(aiScore) {
+  if (aiScore >= target) {
+    alert("😢 You Lost!");
+  } else {
+    alert("🎉 You Won!");
+  }
+}
+
+function updateInfo(msg) {
+  document.getElementById("info").innerText =
+    "Balls: " + ballsLeft + " | Wickets: " + wickets;
+
+  document.getElementById("score").innerText =
+    "Score: " + score;
+
+  document.getElementById("result").innerText = msg;
+}
 </script>
 
 </body>
