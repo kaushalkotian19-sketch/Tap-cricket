@@ -10,6 +10,7 @@ body {
   text-align: center;
 }
 
+/* TOP BAR */
 #topBar {
   display: flex;
   justify-content: space-between;
@@ -23,6 +24,7 @@ body {
   border-radius: 20px;
 }
 
+/* GAME */
 #gameBox {
   width: 300px;
   height: 40px;
@@ -48,26 +50,29 @@ body {
   left: 0;
 }
 
+/* BUTTONS */
 button {
-  padding: 12px 16px;
-  margin: 8px;
-  background: #ef4444;
+  padding: 12px 18px;
+  margin: 10px;
+  background: linear-gradient(#ff4d4d,#b91c1c);
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   color: white;
+  font-size: 16px;
 }
 
+/* ROOM CARD */
 .room {
   background: #1e293b;
-  padding: 10px;
   margin: 10px;
+  padding: 10px;
   border-radius: 10px;
 }
 </style></head><body><div id="topBar">
-  <div>⚔️ Combat</div>
+  <div>⚔️ Perfect Hit Arena</div>
   <div id="balance">💰 500 ION</div>
 </div><div id="content"></div><script>
-// 🔥 YOUR FIREBASE CONFIG
+// FIREBASE CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyDVnSw1QHjrZ0TCHOKBDK5PxjMhPPRVehI",
   authDomain: "perfect-hit-arena.firebaseapp.com",
@@ -82,28 +87,30 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 // STATE
-let state = {
-  coins: 500,
-  playerId: "p" + Math.floor(Math.random()*10000),
-  roomId: null,
-  score: 0,
-  pos: 0,
-  speed: 3,
-  entryFee: 100
-};
+let balance = 500;
+let score = 0;
+let combo = 0;
+let multiplier = 1;
 
-// RENDER LOBBY
+let playerId = "p" + Math.floor(Math.random()*10000);
+let roomId = null;
+let entryFee = 100;
+
+let pos = 0;
+let speed = 3;
+
+// LOBBY
 function renderLobby() {
   db.ref("rooms").once("value", snap => {
     let rooms = snap.val() || {};
+
     let html = "<h2>⚔️ Combat Rooms</h2>";
 
     for (let id in rooms) {
-      let r = rooms[id];
       html += `
         <div class="room">
           <p>Room: ${id}</p>
-          <p>Pool: ${r.pool} ION</p>
+          <p>Pool: ${rooms[id].pool} ION</p>
           <button onclick="joinRoom('${id}')">Join</button>
         </div>
       `;
@@ -117,21 +124,23 @@ function renderLobby() {
 
 // CREATE ROOM
 function createRoom() {
-  if (state.coins < state.entryFee) return alert("Not enough ION");
+  if (balance < entryFee) return alert("Not enough ION");
 
   let id = "room_" + Math.floor(Math.random()*10000);
 
   db.ref("rooms/" + id).set({
-    pool: state.entryFee,
+    pool: entryFee,
     players: {
-      [state.playerId]: { score: 0 }
+      [playerId]: { score: 0 }
     }
   });
 
-  state.coins -= state.entryFee;
-  state.roomId = id;
+  balance -= entryFee;
+  updateBalance();
 
+  roomId = id;
   renderGame();
+  listenRoom();
 }
 
 // JOIN ROOM
@@ -141,87 +150,107 @@ function joinRoom(id) {
 
     let room = snap.val();
 
-    if (state.coins < state.entryFee) return alert("Not enough ION");
+    if (balance < entryFee) return alert("Not enough ION");
 
-    db.ref("rooms/" + id + "/players/" + state.playerId).set({
+    db.ref("rooms/" + id + "/players/" + playerId).set({
       score: 0
     });
 
-    db.ref("rooms/" + id + "/pool").set(room.pool + state.entryFee);
+    db.ref("rooms/" + id + "/pool").set(room.pool + entryFee);
 
-    state.coins -= state.entryFee;
-    state.roomId = id;
+    balance -= entryFee;
+    updateBalance();
 
+    roomId = id;
     renderGame();
+    listenRoom();
   });
 }
 
 // GAME UI
 function renderGame() {
   document.getElementById("content").innerHTML = `
-    <h2>Score: ${state.score}</h2>
+    <h2>Score: ${score}</h2>
+    <h3 style="color:#22c55e;">Combo: ${combo} (x${multiplier})</h3>
+
     <div id="gameBox">
       <div id="perfect"></div>
       <div id="hitZone"></div>
     </div>
-    <button onclick="hit()">HIT</button>
-  `;
 
-  listenRoom();
+    <button onclick="hit()">🎯 HIT</button>
+  `;
 }
 
-// MOVE BAR
-setInterval(() => {
-  let bar = document.getElementById("hitZone");
-  if (!bar) return;
-
-  state.pos += state.speed;
-  if (state.pos > 290 || state.pos < 0) state.speed *= -1;
-
-  bar.style.left = state.pos + "px";
-}, 20);
-
-// HIT
+// HIT SYSTEM
 function hit() {
-  let success = state.pos > 120 && state.pos < 180;
+  let success = pos > 120 && pos < 180;
 
   if (success) {
-    state.score += 10;
-    updateScore();
+    combo++;
+    multiplier = Math.floor(combo / 3) + 1;
+    score += 10 * multiplier;
+  } else {
+    combo = 0;
+    multiplier = 1;
   }
 
-  state.pos = 0;
+  updateScore();
   renderGame();
 }
 
-// UPDATE SCORE
+// UPDATE SCORE TO FIREBASE
 function updateScore() {
-  db.ref("rooms/" + state.roomId + "/players/" + state.playerId)
-    .update({ score: state.score });
+  if (roomId) {
+    db.ref("rooms/" + roomId + "/players/" + playerId)
+      .update({ score: score });
+  }
 }
 
-// LISTEN (REAL TIME)
+// LISTEN ROOM
 function listenRoom() {
-  db.ref("rooms/" + state.roomId).on("value", snap => {
+  db.ref("rooms/" + roomId).on("value", snap => {
     let data = snap.val();
     if (!data) return;
 
     let scores = Object.values(data.players).map(p => p.score);
     let max = Math.max(...scores);
 
-    if (max >= 100) {
-      alert("🏆 Winner gets " + data.pool + " ION!");
-      state.coins += data.pool;
+    if (max >= 200) {
+      if (score === max) {
+        alert("🏆 You won " + data.pool + " ION!");
+        balance += data.pool;
+        updateBalance();
+      } else {
+        alert("❌ You lost!");
+      }
 
-      db.ref("rooms/" + state.roomId).remove();
-
-      state.roomId = null;
-      state.score = 0;
+      db.ref("rooms/" + roomId).remove();
+      roomId = null;
+      score = 0;
+      combo = 0;
 
       renderLobby();
     }
   });
 }
+
+// BALANCE UPDATE
+function updateBalance() {
+  document.getElementById("balance").innerText = "💰 " + balance + " ION";
+}
+
+// BAR MOVEMENT
+setInterval(() => {
+  let bar = document.getElementById("hitZone");
+  if (!bar) return;
+
+  pos += speed;
+
+  if (pos > 290 || pos < 0) speed *= -1;
+
+  bar.style.left = pos + "px";
+}, 20);
 
 // START
 renderLobby();
