@@ -5,35 +5,39 @@
 body {
   margin: 0;
   font-family: Arial;
-  background: #0f172a;
+  background: linear-gradient(180deg,#0f172a,#020617);
   color: white;
   text-align: center;
 }
 
-/* TOP BAR */
+/* SAFE AREA FIX */
 #topBar {
+  padding-top: env(safe-area-inset-top);
   display: flex;
   justify-content: space-between;
-  padding: 12px;
+  padding: 14px 16px;
   background: #0b1a2e;
-  z-index: 1000;
   position: relative;
+  z-index: 1000;
 }
 
-#menuBtn { font-size: 24px; cursor: pointer; }
+#menuBtn {
+  font-size: 26px;
+  padding-left: 5px;
+  cursor: pointer;
+}
 
 #balance {
   background: #132b4a;
-  padding: 6px 14px;
+  padding: 8px 16px;
   border-radius: 20px;
 }
 
 /* MENU */
 #sideMenu {
   position: fixed;
-  top: 0;
-  left: -230px;
-  width: 220px;
+  left: -240px;
+  width: 230px;
   height: 100%;
   background: #0f2238;
   padding: 20px;
@@ -56,24 +60,18 @@ body {
   padding: 14px;
   background: #1e293b;
   border-radius: 12px;
-  color: white;
   border: none;
-}
-
-/* CONTENT LOCK */
-#content.menu-open {
-  filter: blur(3px);
-  pointer-events: none;
+  color: white;
 }
 
 /* GAME */
 #gameBox {
-  width: 300px;
+  width: 320px;
   height: 40px;
   background: #1e293b;
   margin: 20px auto;
   position: relative;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 #perfect {
@@ -103,25 +101,24 @@ button {
   min-width: 110px;
 }
 
-/* TEXT */
-.bigScore { font-size: 32px; }
+.bigScore { font-size: 34px; }
 .combo { color: #22c55e; }
 </style></head><body><div id="topBar">
   <div id="menuBtn" onclick="toggleMenu()">☰</div>
   <div id="balance">💰 500 ION</div>
 </div><div id="overlay" onclick="toggleMenu()"></div><div id="sideMenu">
-  <button class="menuBtn" onclick="goPage('home')">🏠 Dashboard</button>
-  <button class="menuBtn" onclick="goPage('game')">🎮 Play</button>
+  <button class="menuBtn" onclick="goPage('combat')">⚔️ Combat</button>
+  <button class="menuBtn" onclick="goPage('game')">🎮 Quick Play</button>
   <button class="menuBtn" onclick="goPage('leaderboard')">🏆 Leaderboard</button>
   <button class="menuBtn" onclick="goPage('settings')">⚙️ Settings</button>
-  <button class="menuBtn" onclick="goPage('profile')">👤 Profile</button>
 </div><div id="content"></div><script>
 let state = {
   coins: 500,
-  page: "home",
+  page: "combat",
 
   pos: 0,
   speed: 3,
+  difficulty: "medium",
 
   score: 0,
   combo: 0,
@@ -130,26 +127,22 @@ let state = {
   entryFee: 100,
   pool: 0,
   inMatch: false,
-  room: null,
 
-  leaderboard: JSON.parse(localStorage.getItem("leaderboard") || "[]"),
-  sound: true
+  rooms: {},
+  currentRoom: null
 };
 
 /* MENU */
 function toggleMenu() {
   let m = document.getElementById("sideMenu");
   let o = document.getElementById("overlay");
-  let c = document.getElementById("content");
 
   if (m.style.left === "0px") {
-    m.style.left = "-230px";
+    m.style.left = "-240px";
     o.style.display = "none";
-    c.classList.remove("menu-open");
   } else {
     m.style.left = "0";
     o.style.display = "block";
-    c.classList.add("menu-open");
   }
 }
 
@@ -159,9 +152,15 @@ function goPage(p) {
   render();
 }
 
-/* HOME */
-function homePage() {
-  return `<h1>🎯 Perfect Hit Arena</h1>`;
+/* COMBAT PAGE */
+function combatPage() {
+  return `
+    <h1>⚔️ Combat</h1>
+    <button onclick="goPage('game')">⚡ Rush</button>
+    <button onclick="alert('Tournament Coming Soon')">🏆 Tournament</button>
+    <button onclick="alert('Live Mode Coming Soon')">🔴 Live</button>
+    <button onclick="alert('History Coming Soon')">📜 History</button>
+  `;
 }
 
 /* GAME */
@@ -170,20 +169,16 @@ function gamePage() {
     <div class="bigScore">Score: ${state.score}</div>
     <div class="combo">Combo: ${state.combo} (x${state.multiplier})</div>
 
-    <p>💰 Entry Fee: ${state.entryFee} ION</p>
-    <p>🏦 Pool: ${state.pool} ION</p>
+    <p>💰 Fee: ${state.entryFee} | Pool: ${state.pool}</p>
 
     <div id="gameBox">
       <div id="perfect"></div>
       <div id="hitZone"></div>
     </div>
 
-    <div>
-      <button onclick="createRoom()">🌐 Create</button>
-      <button onclick="joinRoom()">🔑 Join</button>
-    </div>
-
-    <button onclick="hit()">🎯 HIT</button>
+    <button onclick="createRoom()">Create</button>
+    <button onclick="joinRoom()">Join</button>
+    <button onclick="hit()">HIT</button>
   `;
 }
 
@@ -195,115 +190,70 @@ function moveBar() {
   if (!bar) return;
 
   state.pos += state.speed;
-  if (state.pos > 290 || state.pos < 0) state.speed *= -1;
+
+  if (state.pos > 300 || state.pos < 0) state.speed *= -1;
 
   bar.style.left = state.pos + "px";
 }
 setInterval(moveBar, 20);
 
-/* HIT */
+/* HIT (DIFFICULTY) */
 function hit() {
-  let success = state.pos > 120 && state.pos < 180;
+  let perfectStart = 130;
+  let perfectEnd = 190;
+
+  let success = state.pos > perfectStart && state.pos < perfectEnd;
 
   if (success) {
     state.combo++;
-    state.multiplier = 1 + Math.floor(state.combo / 3);
+    state.multiplier = 1 + Math.floor(state.combo / 2);
     state.score += 10 * state.multiplier;
+
+    // increase difficulty
+    state.speed += 0.3;
+    document.getElementById("perfect").style.width = 
+      Math.max(8, 20 - state.combo) + "%";
+
   } else {
     state.combo = 0;
     state.multiplier = 1;
-  }
-
-  if (state.score >= 100 && state.inMatch) {
-    alert("🏆 You win " + state.pool + " ION!");
-    state.coins += state.pool;
-    state.pool = 0;
-    state.inMatch = false;
-    saveScore();
-    updateBalance();
+    state.speed = 3;
   }
 
   state.pos = 0;
   render();
 }
 
-/* CREATE ROOM */
+/* ROOMS FIXED */
 function createRoom() {
-  if (state.coins < state.entryFee) return alert("Not enough ION");
-
-  state.coins -= state.entryFee;
-  state.pool = state.entryFee;
-  state.inMatch = true;
-
   let id = Math.floor(Math.random()*10000);
-  state.room = id;
 
-  updateBalance();
-  alert("Room: " + id);
+  state.rooms[id] = true;
+  state.currentRoom = id;
+
+  alert("Room Created: " + id);
 }
 
-/* JOIN ROOM */
 function joinRoom() {
-  if (state.coins < state.entryFee) return alert("Not enough ION");
-
   let id = prompt("Enter Room ID:");
-  if (!id) return;
 
-  state.coins -= state.entryFee;
-  state.pool += state.entryFee;
-  state.inMatch = true;
+  if (!state.rooms[id]) {
+    alert("Invalid Room ❌");
+    return;
+  }
 
-  updateBalance();
+  state.currentRoom = id;
   alert("Joined Room: " + id);
-}
-
-/* LEADERBOARD */
-function leaderboardPage() {
-  let list = state.leaderboard.map(s => `<p>🏆 ${s}</p>`).join("");
-  return `<h2>Leaderboard</h2>${list}`;
-}
-
-function saveScore() {
-  state.leaderboard.push(state.score);
-  state.leaderboard.sort((a,b)=>b-a);
-  state.leaderboard = state.leaderboard.slice(0,10);
-  localStorage.setItem("leaderboard", JSON.stringify(state.leaderboard));
-}
-
-/* SETTINGS */
-function settingsPage() {
-  return `
-    <h2>Settings</h2>
-    <button onclick="toggleSound()">Sound: ${state.sound ? "ON" : "OFF"}</button>
-  `;
-}
-
-function toggleSound() {
-  state.sound = !state.sound;
-  render();
-}
-
-/* PROFILE */
-function profilePage() {
-  return `<h2>Coins: ${state.coins}</h2>`;
 }
 
 /* RENDER */
 function render() {
   let html = "";
 
-  if (state.page === "home") html = homePage();
+  if (state.page === "combat") html = combatPage();
   if (state.page === "game") html = gamePage();
-  if (state.page === "leaderboard") html = leaderboardPage();
-  if (state.page === "settings") html = settingsPage();
-  if (state.page === "profile") html = profilePage();
 
   document.getElementById("content").innerHTML = html;
-}
-
-/* BALANCE */
-function updateBalance() {
-  document.getElementById("balance").innerText = "💰 " + state.coins + " ION";
 }
 
 render();
