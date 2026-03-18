@@ -1,77 +1,35 @@
 <!DOCTYPE html><html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Perfect Hit Arena</title><style>
+<title>Perfect Hit Arena</title><!-- Firebase --><script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script><script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script><style>
 body {
   margin: 0;
   font-family: Arial;
-  background: linear-gradient(180deg,#0f172a,#020617);
+  background: linear-gradient(#0f172a,#020617);
   color: white;
   text-align: center;
 }
 
-/* SAFE AREA FIX */
 #topBar {
-  padding-top: env(safe-area-inset-top);
   display: flex;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 12px;
   background: #0b1a2e;
-  position: relative;
-  z-index: 1000;
-}
-
-#menuBtn {
-  font-size: 26px;
-  padding-left: 5px;
-  cursor: pointer;
 }
 
 #balance {
   background: #132b4a;
-  padding: 8px 16px;
+  padding: 6px 14px;
   border-radius: 20px;
 }
 
-/* MENU */
-#sideMenu {
-  position: fixed;
-  left: -240px;
-  width: 230px;
-  height: 100%;
-  background: #0f2238;
-  padding: 20px;
-  transition: 0.3s;
-  z-index: 2000;
-}
-
-#overlay {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.7);
-  display: none;
-  z-index: 1500;
-}
-
-.menuBtn {
-  width: 100%;
-  margin: 14px 0;
-  padding: 14px;
-  background: #1e293b;
-  border-radius: 12px;
-  border: none;
-  color: white;
-}
-
-/* GAME */
 #gameBox {
-  width: 320px;
+  width: 300px;
   height: 40px;
   background: #1e293b;
   margin: 20px auto;
   position: relative;
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 #perfect {
@@ -90,172 +48,182 @@ body {
   left: 0;
 }
 
-/* BUTTON */
 button {
-  padding: 12px 18px;
-  margin: 10px;
-  background: linear-gradient(45deg,#ef4444,#dc2626);
+  padding: 12px 16px;
+  margin: 8px;
+  background: #ef4444;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   color: white;
-  min-width: 110px;
 }
 
-.bigScore { font-size: 34px; }
-.combo { color: #22c55e; }
+.room {
+  background: #1e293b;
+  padding: 10px;
+  margin: 10px;
+  border-radius: 10px;
+}
 </style></head><body><div id="topBar">
-  <div id="menuBtn" onclick="toggleMenu()">☰</div>
+  <div>⚔️ Combat</div>
   <div id="balance">💰 500 ION</div>
-</div><div id="overlay" onclick="toggleMenu()"></div><div id="sideMenu">
-  <button class="menuBtn" onclick="goPage('combat')">⚔️ Combat</button>
-  <button class="menuBtn" onclick="goPage('game')">🎮 Quick Play</button>
-  <button class="menuBtn" onclick="goPage('leaderboard')">🏆 Leaderboard</button>
-  <button class="menuBtn" onclick="goPage('settings')">⚙️ Settings</button>
 </div><div id="content"></div><script>
-let state = {
-  coins: 500,
-  page: "combat",
-
-  pos: 0,
-  speed: 3,
-  difficulty: "medium",
-
-  score: 0,
-  combo: 0,
-  multiplier: 1,
-
-  entryFee: 100,
-  pool: 0,
-  inMatch: false,
-
-  rooms: {},
-  currentRoom: null
+// 🔥 YOUR FIREBASE CONFIG
+const firebaseConfig = {
+  apiKey: "AIzaSyDVnSw1QHjrZ0TCHOKBDK5PxjMhPPRVehI",
+  authDomain: "perfect-hit-arena.firebaseapp.com",
+  databaseURL: "https://perfect-hit-arena-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "perfect-hit-arena",
+  storageBucket: "perfect-hit-arena.firebasestorage.app",
+  messagingSenderId: "1098567967142",
+  appId: "1:1098567967142:web:1a6b3bbd3a97cea6566f67"
 };
 
-/* MENU */
-function toggleMenu() {
-  let m = document.getElementById("sideMenu");
-  let o = document.getElementById("overlay");
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-  if (m.style.left === "0px") {
-    m.style.left = "-240px";
-    o.style.display = "none";
-  } else {
-    m.style.left = "0";
-    o.style.display = "block";
-  }
+// STATE
+let state = {
+  coins: 500,
+  playerId: "p" + Math.floor(Math.random()*10000),
+  roomId: null,
+  score: 0,
+  pos: 0,
+  speed: 3,
+  entryFee: 100
+};
+
+// RENDER LOBBY
+function renderLobby() {
+  db.ref("rooms").once("value", snap => {
+    let rooms = snap.val() || {};
+    let html = "<h2>⚔️ Combat Rooms</h2>";
+
+    for (let id in rooms) {
+      let r = rooms[id];
+      html += `
+        <div class="room">
+          <p>Room: ${id}</p>
+          <p>Pool: ${r.pool} ION</p>
+          <button onclick="joinRoom('${id}')">Join</button>
+        </div>
+      `;
+    }
+
+    html += `<button onclick="createRoom()">+ Create Room</button>`;
+
+    document.getElementById("content").innerHTML = html;
+  });
 }
 
-function goPage(p) {
-  state.page = p;
-  toggleMenu();
-  render();
+// CREATE ROOM
+function createRoom() {
+  if (state.coins < state.entryFee) return alert("Not enough ION");
+
+  let id = "room_" + Math.floor(Math.random()*10000);
+
+  db.ref("rooms/" + id).set({
+    pool: state.entryFee,
+    players: {
+      [state.playerId]: { score: 0 }
+    }
+  });
+
+  state.coins -= state.entryFee;
+  state.roomId = id;
+
+  renderGame();
 }
 
-/* COMBAT PAGE */
-function combatPage() {
-  return `
-    <h1>⚔️ Combat</h1>
-    <button onclick="goPage('game')">⚡ Rush</button>
-    <button onclick="alert('Tournament Coming Soon')">🏆 Tournament</button>
-    <button onclick="alert('Live Mode Coming Soon')">🔴 Live</button>
-    <button onclick="alert('History Coming Soon')">📜 History</button>
-  `;
+// JOIN ROOM
+function joinRoom(id) {
+  db.ref("rooms/" + id).once("value", snap => {
+    if (!snap.exists()) return alert("Invalid Room");
+
+    let room = snap.val();
+
+    if (state.coins < state.entryFee) return alert("Not enough ION");
+
+    db.ref("rooms/" + id + "/players/" + state.playerId).set({
+      score: 0
+    });
+
+    db.ref("rooms/" + id + "/pool").set(room.pool + state.entryFee);
+
+    state.coins -= state.entryFee;
+    state.roomId = id;
+
+    renderGame();
+  });
 }
 
-/* GAME */
-function gamePage() {
-  return `
-    <div class="bigScore">Score: ${state.score}</div>
-    <div class="combo">Combo: ${state.combo} (x${state.multiplier})</div>
-
-    <p>💰 Fee: ${state.entryFee} | Pool: ${state.pool}</p>
-
+// GAME UI
+function renderGame() {
+  document.getElementById("content").innerHTML = `
+    <h2>Score: ${state.score}</h2>
     <div id="gameBox">
       <div id="perfect"></div>
       <div id="hitZone"></div>
     </div>
-
-    <button onclick="createRoom()">Create</button>
-    <button onclick="joinRoom()">Join</button>
     <button onclick="hit()">HIT</button>
   `;
+
+  listenRoom();
 }
 
-/* MOVE */
-function moveBar() {
-  if (state.page !== "game") return;
-
+// MOVE BAR
+setInterval(() => {
   let bar = document.getElementById("hitZone");
   if (!bar) return;
 
   state.pos += state.speed;
-
-  if (state.pos > 300 || state.pos < 0) state.speed *= -1;
+  if (state.pos > 290 || state.pos < 0) state.speed *= -1;
 
   bar.style.left = state.pos + "px";
-}
-setInterval(moveBar, 20);
+}, 20);
 
-/* HIT (DIFFICULTY) */
+// HIT
 function hit() {
-  let perfectStart = 130;
-  let perfectEnd = 190;
-
-  let success = state.pos > perfectStart && state.pos < perfectEnd;
+  let success = state.pos > 120 && state.pos < 180;
 
   if (success) {
-    state.combo++;
-    state.multiplier = 1 + Math.floor(state.combo / 2);
-    state.score += 10 * state.multiplier;
-
-    // increase difficulty
-    state.speed += 0.3;
-    document.getElementById("perfect").style.width = 
-      Math.max(8, 20 - state.combo) + "%";
-
-  } else {
-    state.combo = 0;
-    state.multiplier = 1;
-    state.speed = 3;
+    state.score += 10;
+    updateScore();
   }
 
   state.pos = 0;
-  render();
+  renderGame();
 }
 
-/* ROOMS FIXED */
-function createRoom() {
-  let id = Math.floor(Math.random()*10000);
-
-  state.rooms[id] = true;
-  state.currentRoom = id;
-
-  alert("Room Created: " + id);
+// UPDATE SCORE
+function updateScore() {
+  db.ref("rooms/" + state.roomId + "/players/" + state.playerId)
+    .update({ score: state.score });
 }
 
-function joinRoom() {
-  let id = prompt("Enter Room ID:");
+// LISTEN (REAL TIME)
+function listenRoom() {
+  db.ref("rooms/" + state.roomId).on("value", snap => {
+    let data = snap.val();
+    if (!data) return;
 
-  if (!state.rooms[id]) {
-    alert("Invalid Room ❌");
-    return;
-  }
+    let scores = Object.values(data.players).map(p => p.score);
+    let max = Math.max(...scores);
 
-  state.currentRoom = id;
-  alert("Joined Room: " + id);
+    if (max >= 100) {
+      alert("🏆 Winner gets " + data.pool + " ION!");
+      state.coins += data.pool;
+
+      db.ref("rooms/" + state.roomId).remove();
+
+      state.roomId = null;
+      state.score = 0;
+
+      renderLobby();
+    }
+  });
 }
 
-/* RENDER */
-function render() {
-  let html = "";
-
-  if (state.page === "combat") html = combatPage();
-  if (state.page === "game") html = gamePage();
-
-  document.getElementById("content").innerHTML = html;
-}
-
-render();
+// START
+renderLobby();
 </script></body>
 </html>
