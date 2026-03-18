@@ -10,11 +10,14 @@ body {
   text-align: center;
 }
 
+/* TOP BAR */
 #topBar {
   display: flex;
   justify-content: space-between;
   padding: 12px;
   background: #0b1a2e;
+  z-index: 1000;
+  position: relative;
 }
 
 #menuBtn { font-size: 24px; cursor: pointer; }
@@ -25,36 +28,45 @@ body {
   border-radius: 20px;
 }
 
+/* MENU */
 #sideMenu {
   position: fixed;
-  left: -220px;
+  top: 0;
+  left: -230px;
   width: 220px;
   height: 100%;
   background: #0f2238;
   padding: 20px;
   transition: 0.3s;
-  z-index: 1000;
+  z-index: 2000;
 }
 
 #overlay {
   position: fixed;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.7);
   display: none;
-  z-index: 999;
+  z-index: 1500;
 }
 
 .menuBtn {
   width: 100%;
-  margin: 12px 0;
-  padding: 12px;
+  margin: 14px 0;
+  padding: 14px;
   background: #1e293b;
-  border-radius: 10px;
+  border-radius: 12px;
   color: white;
   border: none;
 }
 
+/* CONTENT LOCK */
+#content.menu-open {
+  filter: blur(3px);
+  pointer-events: none;
+}
+
+/* GAME */
 #gameBox {
   width: 300px;
   height: 40px;
@@ -80,14 +92,20 @@ body {
   left: 0;
 }
 
+/* BUTTON */
 button {
-  padding: 12px;
+  padding: 12px 18px;
   margin: 10px;
-  background: #ef4444;
+  background: linear-gradient(45deg,#ef4444,#dc2626);
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   color: white;
+  min-width: 110px;
 }
+
+/* TEXT */
+.bigScore { font-size: 32px; }
+.combo { color: #22c55e; }
 </style></head><body><div id="topBar">
   <div id="menuBtn" onclick="toggleMenu()">☰</div>
   <div id="balance">💰 500 ION</div>
@@ -101,26 +119,37 @@ button {
 let state = {
   coins: 500,
   page: "home",
+
+  pos: 0,
+  speed: 3,
+
   score: 0,
   combo: 0,
   multiplier: 1,
-  pos: 0,
-  speed: 3,
-  sound: true,
+
+  entryFee: 100,
+  pool: 0,
+  inMatch: false,
   room: null,
-  leaderboard: JSON.parse(localStorage.getItem("leaderboard") || "[]")
+
+  leaderboard: JSON.parse(localStorage.getItem("leaderboard") || "[]"),
+  sound: true
 };
 
 /* MENU */
 function toggleMenu() {
   let m = document.getElementById("sideMenu");
   let o = document.getElementById("overlay");
+  let c = document.getElementById("content");
+
   if (m.style.left === "0px") {
-    m.style.left = "-220px";
+    m.style.left = "-230px";
     o.style.display = "none";
+    c.classList.remove("menu-open");
   } else {
     m.style.left = "0";
     o.style.display = "block";
+    c.classList.add("menu-open");
   }
 }
 
@@ -138,16 +167,22 @@ function homePage() {
 /* GAME */
 function gamePage() {
   return `
-    <h2>Score: ${state.score}</h2>
-    <p>Combo: ${state.combo} (x${state.multiplier})</p>
+    <div class="bigScore">Score: ${state.score}</div>
+    <div class="combo">Combo: ${state.combo} (x${state.multiplier})</div>
+
+    <p>💰 Entry Fee: ${state.entryFee} ION</p>
+    <p>🏦 Pool: ${state.pool} ION</p>
 
     <div id="gameBox">
       <div id="perfect"></div>
       <div id="hitZone"></div>
     </div>
 
-    <button onclick="createRoom()">🌐 Create Room</button>
-    <button onclick="joinRoom()">🔑 Join Room</button>
+    <div>
+      <button onclick="createRoom()">🌐 Create</button>
+      <button onclick="joinRoom()">🔑 Join</button>
+    </div>
+
     <button onclick="hit()">🎯 HIT</button>
   `;
 }
@@ -155,11 +190,13 @@ function gamePage() {
 /* MOVE */
 function moveBar() {
   if (state.page !== "game") return;
+
   let bar = document.getElementById("hitZone");
   if (!bar) return;
 
   state.pos += state.speed;
   if (state.pos > 290 || state.pos < 0) state.speed *= -1;
+
   bar.style.left = state.pos + "px";
 }
 setInterval(moveBar, 20);
@@ -177,23 +214,47 @@ function hit() {
     state.multiplier = 1;
   }
 
+  if (state.score >= 100 && state.inMatch) {
+    alert("🏆 You win " + state.pool + " ION!");
+    state.coins += state.pool;
+    state.pool = 0;
+    state.inMatch = false;
+    saveScore();
+    updateBalance();
+  }
+
   state.pos = 0;
   render();
 }
 
-/* ONLINE SIMULATION */
+/* CREATE ROOM */
 function createRoom() {
+  if (state.coins < state.entryFee) return alert("Not enough ION");
+
+  state.coins -= state.entryFee;
+  state.pool = state.entryFee;
+  state.inMatch = true;
+
   let id = Math.floor(Math.random()*10000);
   state.room = id;
-  alert("Room Created: " + id);
+
+  updateBalance();
+  alert("Room: " + id);
 }
 
+/* JOIN ROOM */
 function joinRoom() {
+  if (state.coins < state.entryFee) return alert("Not enough ION");
+
   let id = prompt("Enter Room ID:");
-  if (id) {
-    state.room = id;
-    alert("Joined Room: " + id);
-  }
+  if (!id) return;
+
+  state.coins -= state.entryFee;
+  state.pool += state.entryFee;
+  state.inMatch = true;
+
+  updateBalance();
+  alert("Joined Room: " + id);
 }
 
 /* LEADERBOARD */
@@ -202,7 +263,6 @@ function leaderboardPage() {
   return `<h2>Leaderboard</h2>${list}`;
 }
 
-/* SAVE SCORE */
 function saveScore() {
   state.leaderboard.push(state.score);
   state.leaderboard.sort((a,b)=>b-a);
@@ -231,6 +291,7 @@ function profilePage() {
 /* RENDER */
 function render() {
   let html = "";
+
   if (state.page === "home") html = homePage();
   if (state.page === "game") html = gamePage();
   if (state.page === "leaderboard") html = leaderboardPage();
